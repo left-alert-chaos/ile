@@ -30,6 +30,7 @@
 pub mod data;
 pub use data::DataType;
 pub mod builtins;
+pub use builtins::*;
 use std::collections::HashMap;
 
 /// # Object
@@ -37,15 +38,8 @@ use std::collections::HashMap;
 /// primitive, or Method. See the module's docstring for more explanation.
 #[derive(Clone)]
 pub enum Object<'a> {
-    /// Holds a code block or wrapped function not attached to a type.
-    Function {
-        name: &'a str,
-    },
-
-    /// Holds a code block or wrapped function attached to a type.
-    Method {
-        name: &'a str,
-    },
+    /// Holds a code block or wrapped function
+    Function(Executable<'a>),
 
     /// Holds a dynamic value that has a type, attributes, and methods.
     Data {
@@ -64,4 +58,62 @@ pub enum Object<'a> {
 
     /// Primitive string type
     String(String),
+}
+
+impl<'a> Object<'a> {
+    /// Determine if the object is a function. If it is, the underlying `Executable<'a>` will be
+    /// returned in an `Option`.
+    pub fn function(&self) -> Option<Executable<'a>> {
+        if let Self::Function(exec) = self {
+            Some(exec.clone())
+        } else {
+            None
+        }
+    }
+
+    /// Determine if the object is data and return related info if it is.
+    pub fn data<'b>(&'b self) -> Option<(&'b dyn DataType<'b>, HashMap<&'b str, Object<'b>>)>
+    where 'b: 'a
+    {
+        if let Self::Data { data_type, attributes } = self {
+            Some((*data_type, attributes.clone()))
+        } else {
+            None
+        }
+    }
+
+    /// Determine if the object is an Integer and return the underlying `i64` if it is.
+    pub fn integer(&self) -> Option<i64> {
+        if let Self::Integer(x) = self {
+            Some(*x)
+        } else {
+            None
+        }
+    }
+
+    /// Determine if the object is a Boolean and return underlying `bool` if it is.
+    pub fn boolean(&self) -> Option<bool> {
+        if let Self::Boolean(b) = self {
+            Some(*b)
+        } else {
+            None
+        }
+    }
+
+    /// Determine if the object is a String and return a reference to underlying `String` if it is.
+    pub fn string<'b>(&'b self) -> Option<&'b String> {
+        if let Self::String(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Determine if this Object has the same classification as the other object. This doesn't
+    /// compare `DataType`s or underlying values, just classifications.
+    pub fn has_same_classification_as<'b>(&'b self, other: &'b Self) -> bool
+    where 'b: 'a
+    {
+        self.function().is_some() && other.function().is_some() || self.integer().is_some() && other.integer().is_some() || self.data().is_some() && other.data().is_some() || self.boolean().is_some() && other.boolean().is_some() || self.string().is_some() && other.string().is_some()
+    }
 }

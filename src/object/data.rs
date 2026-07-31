@@ -11,4 +11,10 @@ pub trait DataType<'a> {
     fn methods(&self) -> HashMap<&str, Object<'a>>;
     fn attributes(&self) -> HashMap<&str, Object<'a>>;
     fn name(&self) -> String;
+
+    /// Used to determine if objects have the same type. The default implementation checks whether
+    /// the results of the `name()` method are equal.
+    fn matches_type_of(&self, other: &'a dyn DataType<'a>) -> bool {
+        self.name() == other.name()
+    }
 }
