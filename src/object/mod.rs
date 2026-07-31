@@ -20,8 +20,8 @@
 //! callable. It is the only object classification that can have attributes or hold other objects.
 //! Every data object is stored as 2 things: its type and its attributes.
 //!
-//! On the back end, the type is stored as an immutable reference to a `DataType` struct stored in
-//! the interpreter. The attributes are stored as a `HashMap`.
+//! On the back end, the type is stored as an immutable reference to a struct implementing `DataType`
+//! stored in the interpreter. The attributes are stored as a `HashMap`.
 //!
 //! # Primitive types
 //! There are 4 primitive types: `Integer`, `Float`, `Boolean`, and `String`. They are thin wrappers
@@ -48,7 +48,7 @@ pub enum Object<'a> {
 
     /// Holds a dynamic value that has a type, attributes, and methods.
     Data {
-        data_type: &'a DataType<'a>,
+        data_type: &'a dyn DataType<'a>,
         attributes: HashMap<&'a str, Object<'a>>,
     },
 

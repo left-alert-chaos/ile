@@ -6,10 +6,9 @@ use std::collections::HashMap;
 use super::Object;
 
 /// # DataType
-/// Represents a type an object can have.
-/// This holds methods and attributes that must be present in every instance of a type.
-#[derive(Clone)]
-pub struct DataType<'a> {
-    pub methods: HashMap<&'a str, Object<'a>>,
-    pub attributes: HashMap<&'a str, DataType<'a>>,
+/// This trait is implemented by all objects that represent types.
+pub trait DataType<'a> {
+    fn methods(&self) -> HashMap<&str, Object<'a>>;
+    fn attributes(&self) -> HashMap<&str, Object<'a>>;
+    fn name(&self) -> String;
 }
