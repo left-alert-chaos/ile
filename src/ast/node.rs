@@ -3,8 +3,13 @@
 //! that can show up in source code--a code block holding other nodes, a function call holding
 //! values to pass, or things like numbers, booleans or string declarations.
 
-use crate::FunctionSignature;
+use crate::{
+    FunctionSignature,
+    Object,
+};
 
+/// # Node
+/// A node is any part of an AST.
 pub enum Node<'a> {
     /// Represents a function call
     Call {
@@ -20,4 +25,10 @@ pub enum Node<'a> {
 
     /// Represents a statement. It holds a `Vec` of `Node::Call`s, to allow for method chaining.
     Chain(Vec<Node<'a>>),
+
+    /// Represents assigning a value to a named variable.
+    Assignment {
+        name: String,
+        value: Object<'a>,
+    },
 }
