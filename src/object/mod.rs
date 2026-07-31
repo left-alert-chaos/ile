@@ -29,6 +29,7 @@
 
 pub mod data;
 pub use data::DataType;
+pub mod builtins;
 use std::collections::HashMap;
 
 /// # Object
