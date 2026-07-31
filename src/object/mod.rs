@@ -1,5 +1,5 @@
 //! # Object
-//! This module holds code having to do with Ile objects- functions, methods, and data.
+//! This module holds code having to do with Ile objects- functions, primitives, methods, and data.
 //! These are classifications, which are distinct from types. A type is a way of classifying data
 //! objects.
 //! 
@@ -22,26 +22,45 @@
 //!
 //! On the back end, the type is stored as an immutable reference to a `DataType` struct stored in
 //! the interpreter. The attributes are stored as a `HashMap`.
+//!
+//! # Primitive types
+//! There are 4 primitive types: `Integer`, `Float`, `Boolean`, and `String`. They are thin wrappers
+//! around Rust types and have no methods. To interact with them, you must use external functions.
 
 pub mod data;
 pub use data::DataType;
 use std::collections::HashMap;
 
 /// # Object
-/// An object is anything that Ile code can see. It can be of three classifications: Data, Function,
-/// or Method. See the module's docstring for more explanation.
+/// An object is anything that Ile code can see. It can be of four classifications: Data, Function,
+/// primitive, or Method. See the module's docstring for more explanation.
 #[derive(Clone)]
 pub enum Object<'a> {
+    /// Holds a code block or wrapped function not attached to a type.
     Function {
         name: &'a str,
     },
 
+    /// Holds a code block or wrapped function attached to a type.
     Method {
         name: &'a str,
     },
 
+    /// Holds a dynamic value that has a type, attributes, and methods.
     Data {
         data_type: &'a DataType<'a>,
         attributes: HashMap<&'a str, Object<'a>>,
     },
+
+    /// Primitive number type
+    Integer(i64),
+
+    /// Primitive floating-point type
+    Float(f64),
+
+    /// Primitive boolean type
+    Boolean(bool),
+
+    /// Primitive string type
+    String(String),
 }
