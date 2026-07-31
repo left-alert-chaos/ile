@@ -8,9 +8,9 @@ use super::{Object, DataType};
 /// # FunctionSignature
 /// This is a wrapper around `Vec<Object<'a>>`. It is used to represent the signatures of Ile
 /// functions to facilitate interoperability.
-#[repr(transparent)]
-pub struct FunctionSignature<'a>(Vec<Object<'a>>);
+pub type FunctionSignature<'a> = Vec<Object<'a>>;
 
+#[derive(Clone)]
 pub enum Executable<'a> {
     /// An executable object that is composed of Ile statements (yet to be implemented).
     CodeBlock,
@@ -18,6 +18,6 @@ pub enum Executable<'a> {
     /// A wrapper around a Rust function that is callable by Ile code.
     Wrapper {
         signature: FunctionSignature<'a>,
-        func: &'a dyn Fn(FunctionSignature<'a>) -> Object,
+        func: &'a Box<dyn Fn(FunctionSignature<'a>) -> Object>,
     },
 }
