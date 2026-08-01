@@ -158,7 +158,7 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
     // Closure to run when all characters of a token have been read
     let mut finish_token = |b: &mut String, s: bool| {
         // Skip if no buffer to tokenize
-        if b.len() == 0 || s {
+        if b.is_empty() || s {
             return Ok(());
         }
 
@@ -236,13 +236,10 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
                     finish_token(&mut buffer, string)?;
                 }
             }
-            ' ' | '\n' | '\t' => {
-                if !string {
+            ' ' | '\n' | '\t'
+                if !string => {
                     finish_token(&mut buffer, string)?;
-                } else {
-                    buffer.push(character);
                 }
-            }
             _ => {
                 buffer.push(character);
             }

@@ -101,7 +101,7 @@ impl<'a> Object<'a> {
     }
 
     /// Determine if the object is a String and return a reference to underlying `String` if it is.
-    pub fn string<'b>(&'b self) -> Option<&'b String> {
+    pub fn string(&self) -> Option<&String> {
         if let Self::String(s) = self {
             Some(s)
         } else {

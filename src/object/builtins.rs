@@ -5,6 +5,7 @@
 //! `Executable`.
 
 use super::{Object, DataType};
+use crate::Node;
 
 /// # FunctionSignature
 /// This is a wrapper around `Vec<Object<'a>>`. It is used to represent the signatures of Ile
@@ -15,12 +16,12 @@ pub type FunctionSignature<'a> = Vec<Object<'a>>;
 pub enum Executable<'a> {
     /// An executable object that is composed of Ile statements (yet to be implemented).
     // TODO
-    CodeBlock,
+    CodeBlock(&'a Node<'a>),
 
     /// A wrapper around a Rust function that is callable by Ile code.
     Wrapper {
         signature: FunctionSignature<'a>,
-        func: &'a Box<dyn Fn(FunctionSignature<'a>) -> Object>,
+        func: &'a dyn Fn(FunctionSignature<'a>) -> Object,
     },
 }
 
