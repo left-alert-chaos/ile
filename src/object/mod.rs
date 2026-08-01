@@ -117,3 +117,29 @@ impl<'a> Object<'a> {
         self.function().is_some() && other.function().is_some() || self.integer().is_some() && other.integer().is_some() || self.data().is_some() && other.data().is_some() || self.boolean().is_some() && other.boolean().is_some() || self.string().is_some() && other.string().is_some()
     }
 }
+
+/// # Variable
+/// This is a small struct that wraps `Object`. It adds a name field for named values and represents
+/// all values with names, be them attributes or variables.
+#[derive(Clone)]
+pub enum Variable<'a> {
+    /// This is the default variant and represents all values.
+    Var {
+        name: String,
+        value: Object<'a>,
+    },
+
+    /// This variant represents a switch between scopes and is used to determine what part of the
+    /// stack to keep what what part to remove.
+    StackDivider,
+}
+
+impl Variable<'_> {
+    /// Return whether this `Variable` is a `StackDivider` or a `Var`
+    pub fn is_divider(&self) -> bool {
+        match self {
+            Self::Var { .. } => false,
+            Self::StackDivider => true,
+        }
+    }
+}
