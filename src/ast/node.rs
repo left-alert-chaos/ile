@@ -6,7 +6,9 @@
 use crate::{
     FunctionSignature,
     Object,
+    DataType,
 };
+use super::scope::ScopeStack;
 
 /// # Node
 /// A node is any part of an AST.
@@ -20,7 +22,7 @@ pub enum Node<'a> {
         path: Vec<String>,
     },
     
-    /// Represents modules and functions
+    /// Represents functions
     CodeBlock(Vec<Node<'a>>),
 
     /// Represents a statement. It holds a `Vec` of `Node::Call`s, to allow for method chaining.
@@ -31,4 +33,25 @@ pub enum Node<'a> {
         name: String,
         value: Object<'a>,
     },
+
+    /// Represents a `DataType` definition.
+    DataType(DataType<'a>),
+    
+    /// Represents the root of one module. Modules can hold others.
+    Root {
+        stack: ScopeStack<'a>,
+        imports: Vec<Node<'a>>,
+        types: Vec<DataType<'a>>,
+    },
+}
+
+impl Node<'_> {
+    /// Create a new `Node::Root`
+    pub fn new_root() -> Self {
+        Self::Root {
+            stack: ScopeStack::new(),
+            imports: Vec::new(),
+            types: Vec::new(),
+        }
+    }
 }
