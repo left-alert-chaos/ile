@@ -91,6 +91,15 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if the object is a Float and return underlying `f64` if it is
+    pub fn float(&self) -> Option<f64> {
+        if let Self::Float(f) = self {
+            Some(*f)
+        } else {
+            None
+        }
+    }
+
     /// Determine if the object is a Boolean and return underlying `bool` if it is.
     pub fn boolean(&self) -> Option<bool> {
         if let Self::Boolean(b) = self {
@@ -114,7 +123,7 @@ impl<'a> Object<'a> {
     pub fn has_same_classification_as<'b>(&'b self, other: &'b Self) -> bool
     where 'b: 'a
     {
-        self.function().is_some() && other.function().is_some() || self.integer().is_some() && other.integer().is_some() || self.data().is_some() && other.data().is_some() || self.boolean().is_some() && other.boolean().is_some() || self.string().is_some() && other.string().is_some()
+        self.function().is_some() && other.function().is_some() || self.integer().is_some() && other.integer().is_some() || self.float().is_some() && other.float().is_some() || self.data().is_some() && other.data().is_some() || self.boolean().is_some() && other.boolean().is_some() || self.string().is_some() && other.string().is_some()
     }
 }
 

@@ -24,10 +24,10 @@ impl Default for ScopeStack<'_> {
 }
 
 impl<'a> ScopeStack<'a> {
-    /// Create a new `ScopeStack`
+    /// Create a new `ScopeStack` with one `Variable::StackDivider` in the stack already.
     pub fn new() -> Self {
         Self {
-            current_stack: Vec::new(),
+            current_stack: Vec::from([Variable::StackDivider]),
             cached_scopes: Vec::new(),
         }
     }
@@ -144,3 +144,38 @@ impl fmt::Display for ScopeError {
 }
 
 impl Error for ScopeError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    //Put a bunch of garbage on the stack and make sure it looks up only for first value with a
+    //given name
+    #[test]
+    fn lookup() {
+        let mut stack = ScopeStack::new();
+
+        // fill the stack with garbage
+        stack.push(Variable::Var {
+            name: String::from("pi"),
+            value: Object::Integer(10),
+        });
+        stack.push(Variable::StackDivider);
+        stack.push(Variable::Var {
+            name: String::from("siiiix_seeeeeven"),
+            value: Object::Integer(67),
+        });
+
+        // push the value we actually want
+        stack.push(Variable::Var {
+            name: String::from("pi"),
+            value: Object::Float(3.1415926535),
+        });
+
+        let lookup = stack.lookup(&mut String::from("pi")).unwrap();
+        let Variable::Var { value, .. } = lookup else {
+            panic!("Lookup was a StackDivider");
+        };
+        assert_eq!(value.float(), Some(3.1415926535));
+    }
+}
