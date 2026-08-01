@@ -67,6 +67,9 @@ pub enum Token {
     /// A token for inequality comparisons (!=)
     NotEqualTo,
 
+    /// A token for reversing a boolean value (!)
+    Not,
+
     /// A token for string literals
     String(String),
 
@@ -75,6 +78,8 @@ pub enum Token {
 
     /// A token for float literals
     Float(f64),
+
+    Boolean(bool),
 
     /// A token for anything that doesn't fit into any other bucket; it's usually object and type
     /// names.
@@ -103,16 +108,20 @@ impl Token {
                 '-' => return Ok(Self::Subtraction),
                 '*' => return Ok(Self::Multiplication),
                 '/' => return Ok(Self::Division),
+                '!' => return Ok(Self::Not),
                 _ => {}
             }
-        } else if len == 2 {
-            match value.chars().as_str() {
-                ">=" => return Ok(Self::GreaterThanOrEqualTo),
-                "<=" => return Ok(Self::LessThanOrEqualTo),
-                "==" => return Ok(Self::Equality),
-                "!=" => return Ok(Self::NotEqualTo),
-                _ => {}
-            }
+        }
+
+        // various keywords
+        match value.as_str() {
+            ">=" => return Ok(Self::GreaterThanOrEqualTo),
+            "<=" => return Ok(Self::LessThanOrEqualTo),
+            "==" => return Ok(Self::Equality),
+            "!=" => return Ok(Self::NotEqualTo),
+            "false" => return Ok(Self::Boolean(false)),
+            "true" => return Ok(Self::Boolean(true)),
+            _ => {}
         }
 
         if value.starts_with('"') && value.ends_with('"') {
@@ -163,6 +172,7 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
     };
     
     for (index, character) in code.chars().enumerate() {
+        // This match statement is ugly and gross
         match character {
             // single-character tokens are processed by sending complete previous token and then
             // sending them by themselves
@@ -205,6 +215,18 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
                             }
                         }
                     }
+                }
+            }
+            // Similar to the =, the ! is only processed by itself if the next character isn't =.
+            '!' => {
+                // process as its own token
+                if Some('=') != code.chars().nth(index + 1) {
+                    finish_token(&mut buffer, string)?;
+                    buffer.push('!');
+                    finish_token(&mut buffer, string)?;
+                } else {
+                    // if it's not its own thing, add to buffer
+                    buffer.push('!');
                 }
             }
             // process string literals
@@ -270,8 +292,15 @@ mod tests {
 
     #[test]
     fn tokenize_equality_check() {
-        let result = tokenize("==;");
-        let expected = Vec::from([Token::Equality, Token::ChainEnd]);
+        let result = tokenize("== ");
+        let expected = Vec::from([Token::Equality]);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn tokenize_not() {
+        let result = tokenize("!");
+        let expected = Vec::from([Token::Not]);
         assert_eq!(result.unwrap(), expected);
     }
 }
