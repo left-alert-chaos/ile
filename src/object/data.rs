@@ -6,15 +6,10 @@ use std::collections::HashMap;
 use super::Object;
 
 /// # DataType
-/// This trait is implemented by all objects that represent types.
-pub trait DataType<'a> {
-    fn methods(&self) -> HashMap<&str, Object<'a>>;
-    fn attributes(&self) -> HashMap<&str, Object<'a>>;
-    fn name(&self) -> String;
-
-    /// Used to determine if objects have the same type. The default implementation checks whether
-    /// the results of the `name()` method are equal.
-    fn matches_type_of(&self, other: &'a dyn DataType<'a>) -> bool {
-        self.name() == other.name()
-    }
+/// This struct represents a data type in Ile. It contains the methods and attributes that objects
+/// that have a type must have.
+pub struct DataType<'a> {
+    pub methods: HashMap<&'a str, Object<'a>>,
+    pub attributes: HashMap<&'a str, Object<'a>>,
+    pub name: String,
 }

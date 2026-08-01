@@ -43,7 +43,7 @@ pub enum Object<'a> {
 
     /// Holds a dynamic value that has a type, attributes, and methods.
     Data {
-        data_type: &'a dyn DataType<'a>,
+        data_type: &'a DataType<'a>,
         attributes: HashMap<&'a str, Object<'a>>,
     },
 
@@ -72,7 +72,7 @@ impl<'a> Object<'a> {
     }
 
     /// Determine if the object is data and return related info if it is.
-    pub fn data<'b>(&'b self) -> Option<(&'b dyn DataType<'b>, HashMap<&'b str, Object<'b>>)>
+    pub fn data<'b>(&'b self) -> Option<(&'b DataType<'b>, HashMap<&'b str, Object<'b>>)>
     where 'b: 'a
     {
         if let Self::Data { data_type, attributes } = self {
