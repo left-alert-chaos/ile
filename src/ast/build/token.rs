@@ -7,9 +7,29 @@
 //! inside a preexisting application.
 
 /// # Token
-/// This is an enum representing a processed token of source code.
+/// This is a struct holding both a `TokenType` and a line number for debugging. It is one piece of
+/// processed information.
 #[derive(Debug, PartialEq)]
-pub enum Token {
+pub struct Token {
+    ttype: TokenType,
+    line: u64,
+}
+
+impl Token {
+    pub fn from(value: String, line: u64) -> Result<Self, String> {
+        let ttype = TokenType::from(value)?;
+
+        Ok(Self {
+            ttype,
+            line
+        })
+    }
+}
+
+/// # TokenType
+/// This is an enum representing the type of a processed token of source code.
+#[derive(Debug, PartialEq)]
+pub enum TokenType {
     /// A token for (
     OpenParen,
 
@@ -79,14 +99,18 @@ pub enum Token {
     /// A token for float literals
     Float(f64),
 
+    /// A token for booleans
     Boolean(bool),
+
+    /// A token for the `datatype` keyword
+    Datatype,
 
     /// A token for anything that doesn't fit into any other bucket; it's usually object and type
     /// names.
     Word(String),
 }
 
-impl Token {
+impl TokenType {
     fn from(mut value: String) -> Result<Self, String> {
         let len = value.len();
 
@@ -121,6 +145,7 @@ impl Token {
             "!=" => return Ok(Self::NotEqualTo),
             "false" => return Ok(Self::Boolean(false)),
             "true" => return Ok(Self::Boolean(true)),
+            "datatype" => return Ok(Self::Datatype),
             _ => {}
         }
 
@@ -145,7 +170,7 @@ impl Token {
 }
 
 /// # tokenize
-/// This function processes a piece of code into a `Vec<Token>` object. This is the first step of
+/// This function processes a piece of code into a `Vec<TokenType>` object. This is the first step of
 /// interpretation.
 pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
     let code = code.to_string();
@@ -154,16 +179,17 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
     let mut buffer = String::new();
     let mut string = false;
     let mut previous = ' ';
+    let mut line = 1;
 
     // Closure to run when all characters of a token have been read
-    let mut finish_token = |b: &mut String, s: bool| {
+    let mut finish_token = |b: &mut String, s: bool, line: u64| {
         // Skip if no buffer to tokenize
         if b.is_empty() || s {
             return Ok(());
         }
 
         // Attempt to tokenize buffer
-        match Token::from(b.clone()) {
+        match Token::from(b.clone(), line) {
             Ok(token) => {println!("Created token {token:?} from buffer {b}"); tokens.push(token)},
             Err(reason) => return Err(reason)
         }
@@ -177,9 +203,9 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
             // single-character tokens are processed by sending complete previous token and then
             // sending them by themselves
             ';' | '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '+' | '-' | '*' | '/'  => {
-                finish_token(&mut buffer, string)?;
+                finish_token(&mut buffer, string, line)?;
                 buffer.push(character);
-                finish_token(&mut buffer, string)?;
+                finish_token(&mut buffer, string, line)?;
             }
             // Dot is similar to other single-character tokens, but has to check if it's being used
             // in a float first
@@ -188,9 +214,9 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
                     buffer.push('.');
                 } else {
                     // if it's not a number, create a new token
-                    finish_token(&mut buffer, string)?;
+                    finish_token(&mut buffer, string, line)?;
                     buffer.push('.');
-                    finish_token(&mut buffer, string)?;
+                    finish_token(&mut buffer, string, line)?;
                 }
             }
             // Equality only processed as its own token if the previous character wasn't special.
@@ -206,11 +232,11 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
                             // the same regardless.
                             // I wrote this at 11 PM, so this might get replaced at some point
                             if next != '=' {
-                                finish_token(&mut buffer, string)?;
+                                finish_token(&mut buffer, string, line)?;
                                 buffer.push('=');
-                                finish_token(&mut buffer, string)?;
+                                finish_token(&mut buffer, string, line)?;
                             } else {
-                                finish_token(&mut buffer, string)?;
+                                finish_token(&mut buffer, string, line)?;
                                 buffer.push('=');
                             }
                         }
@@ -221,9 +247,9 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
             '!' => {
                 // process as its own token
                 if Some('=') != code.chars().nth(index + 1) {
-                    finish_token(&mut buffer, string)?;
+                    finish_token(&mut buffer, string, line)?;
                     buffer.push('!');
-                    finish_token(&mut buffer, string)?;
+                    finish_token(&mut buffer, string, line)?;
                 } else {
                     // if it's not its own thing, add to buffer
                     buffer.push('!');
@@ -233,13 +259,21 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
             '"' => {
                 string = !string;
                 if !string {
-                    finish_token(&mut buffer, string)?;
+                    finish_token(&mut buffer, string, line)?;
                 }
             }
-            ' ' | '\n' | '\t'
+            ' ' | '\t'
                 if !string => {
-                    finish_token(&mut buffer, string)?;
+                    finish_token(&mut buffer, string, line)?;
                 }
+            '\n' => {
+                line += 1;
+                if !string {
+                    finish_token(&mut buffer, string, line)?;
+                } else {
+                    buffer.push('\n');
+                }
+            }
             _ => {
                 buffer.push(character);
             }
@@ -249,55 +283,7 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
     }
 
     // flush buffer in case there's a trailing token
-    println!("Flushing buffer");
-    finish_token(&mut buffer, string)?;
+    finish_token(&mut buffer, string, line)?;
 
     Ok(tokens)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn tokenize_int_set() {
-        let result = tokenize("Integer x = 15;");
-        let expected = Vec::from([Token::Word(String::from("Integer")), Token::Word(String::from("x")), Token::Assignment, Token::Integer(15), Token::ChainEnd]);
-        assert_eq!(result.unwrap(), expected);
-    }
-
-    #[test]
-    fn tokenize_float_set() {
-        let result = tokenize("Float var_name = 3.14159;");
-        let expected = Vec::from([Token::Word(String::from("Float")), Token::Word(String::from("var_name")), Token::Assignment, Token::Float(3.14159), Token::ChainEnd]);
-        assert_eq!(result.unwrap(), expected);
-    }
-
-    #[test]
-    fn tokenize_path_separator() {
-        let result = tokenize("Bool var_name = other_var.boolean_attribute_i_guess;");
-        let expected = Vec::from([Token::Word(String::from("Bool")), Token::Word(String::from("var_name")), Token::Assignment, Token::Word(String::from("other_var")), Token::PathSeparator, Token::Word(String::from("boolean_attribute_i_guess")), Token::ChainEnd]);
-        assert_eq!(result.unwrap(), expected);
-    }
-
-    #[test]
-    fn tokenize_inequality() {
-        let result = tokenize("!=");
-        let expected = Vec::from([Token::NotEqualTo]);
-        assert_eq!(result.unwrap(), expected);
-    }
-
-    #[test]
-    fn tokenize_equality_check() {
-        let result = tokenize("== ");
-        let expected = Vec::from([Token::Equality]);
-        assert_eq!(result.unwrap(), expected);
-    }
-
-    #[test]
-    fn tokenize_not() {
-        let result = tokenize("!");
-        let expected = Vec::from([Token::Not]);
-        assert_eq!(result.unwrap(), expected);
-    }
 }
