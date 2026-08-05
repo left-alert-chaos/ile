@@ -5,7 +5,7 @@
 
 use crate::*;
 
-use std::{fmt, error::Error};
+use std::{error::Error, fmt};
 
 /// # ScopeStack
 /// This type is used to manage multiple scopes and switch to the currently needed one. Its main
@@ -45,7 +45,9 @@ impl<'a> ScopeStack<'a> {
     /// requested name, return that one. If none of them do, return None.
     pub fn lookup(&mut self, searched_name: &mut String) -> Option<&mut Variable<'a>> {
         for var in self.current_stack.iter_mut().rev() {
-            if let Variable::Var{ name, .. } = var && name == searched_name {
+            if let Variable::Var { name, .. } = var
+                && name == searched_name
+            {
                 return Some(var);
             }
         }
@@ -64,7 +66,7 @@ impl<'a> ScopeStack<'a> {
             // If the stack is emptied before the target, restore the cached vars and return Err(())
             let Some(var) = self.current_stack.pop() else {
                 self.restore_scope(cache);
-                return Err(ScopeError::OutOfVars)
+                return Err(ScopeError::OutOfVars);
             };
 
             if var.is_divider() {
@@ -137,7 +139,9 @@ impl fmt::Display for ScopeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let explanation = match self {
             Self::OutOfCachedScopes => "ran out of cached scopes, so can't restore a scope",
-            Self::OutOfVars => "ran out of vars to cache before the target number of scopes to cache was met",
+            Self::OutOfVars => {
+                "ran out of vars to cache before the target number of scopes to cache was met"
+            }
         };
 
         write!(f, "{explanation}")

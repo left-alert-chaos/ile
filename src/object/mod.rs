@@ -2,19 +2,19 @@
 //! This module holds code having to do with Ile objects- functions, primitives, methods, and data.
 //! These are classifications, which are distinct from types. A type is a way of classifying data
 //! objects.
-//! 
+//!
 //! # Overview
 //! It is important to make the distinction between object classifications; data is any object
 //! that is not callable and represents some piece of information. Functions are callable objects.
 //! Methods are callable objects that can be stored in a data type's method table.
-//! 
+//!
 //! # Method tables
 //! To avoid having to store a set of large methods on the backend for every instantiated object,
 //! data types store a table of methods and their names. When a method is called on a data object,
 //! the interpreter searches its type's method table. If it finds a method of the called name, it
 //! executes it. If it doesn't, it searches the object's attributes for a method of the same name.
 //! If one is found, that is executed. If not, an error is raised.
-//! 
+//!
 //! # Data
 //! Most things a developer working in Ile will encounter are data. Data is any object that is not
 //! callable. It is the only object classification that can have attributes or hold other objects.
@@ -73,9 +73,14 @@ impl<'a> Object<'a> {
 
     /// Determine if the object is data and return related info if it is.
     pub fn data<'b>(&'b self) -> Option<(&'b DataType<'b>, HashMap<&'b str, Object<'b>>)>
-    where 'b: 'a
+    where
+        'b: 'a,
     {
-        if let Self::Data { data_type, attributes } = self {
+        if let Self::Data {
+            data_type,
+            attributes,
+        } = self
+        {
             Some((*data_type, attributes.clone()))
         } else {
             None
@@ -121,9 +126,15 @@ impl<'a> Object<'a> {
     /// Determine if this Object has the same classification as the other object. This doesn't
     /// compare `DataType`s or underlying values, just classifications.
     pub fn has_same_classification_as<'b>(&'b self, other: &'b Self) -> bool
-    where 'b: 'a
+    where
+        'b: 'a,
     {
-        self.function().is_some() && other.function().is_some() || self.integer().is_some() && other.integer().is_some() || self.float().is_some() && other.float().is_some() || self.data().is_some() && other.data().is_some() || self.boolean().is_some() && other.boolean().is_some() || self.string().is_some() && other.string().is_some()
+        self.function().is_some() && other.function().is_some()
+            || self.integer().is_some() && other.integer().is_some()
+            || self.float().is_some() && other.float().is_some()
+            || self.data().is_some() && other.data().is_some()
+            || self.boolean().is_some() && other.boolean().is_some()
+            || self.string().is_some() && other.string().is_some()
     }
 }
 
@@ -133,10 +144,7 @@ impl<'a> Object<'a> {
 #[derive(Clone)]
 pub enum Variable<'a> {
     /// This is the default variant and represents all values.
-    Var {
-        name: String,
-        value: Object<'a>,
-    },
+    Var { name: String, value: Object<'a> },
 
     /// This variant represents a switch between scopes and is used to determine what part of the
     /// stack to keep what what part to remove.

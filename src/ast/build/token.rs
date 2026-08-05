@@ -19,10 +19,7 @@ impl Token {
     pub fn from(value: String, line: u64) -> Result<Self, String> {
         let ttype = TokenType::from(value)?;
 
-        Ok(Self {
-            ttype,
-            line
-        })
+        Ok(Self { ttype, line })
     }
 }
 
@@ -152,7 +149,9 @@ impl TokenType {
         if value.starts_with('"') && value.ends_with('"') {
             // check validity
             if len < 2 {
-                return Err(String::from("invalid string literal due to odd number of quotation marks"));
+                return Err(String::from(
+                    "invalid string literal due to odd number of quotation marks",
+                ));
             }
 
             // Remove quotes
@@ -190,19 +189,22 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
 
         // Attempt to tokenize buffer
         match Token::from(b.clone(), line) {
-            Ok(token) => {println!("Created token {token:?} from buffer {b}"); tokens.push(token)},
-            Err(reason) => return Err(reason)
+            Ok(token) => {
+                println!("Created token {token:?} from buffer {b}");
+                tokens.push(token)
+            }
+            Err(reason) => return Err(reason),
         }
         b.clear();
         Ok(())
     };
-    
+
     for (index, character) in code.chars().enumerate() {
         // This match statement is ugly and gross
         match character {
             // single-character tokens are processed by sending complete previous token and then
             // sending them by themselves
-            ';' | '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '+' | '-' | '*' | '/'  => {
+            ';' | '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '+' | '-' | '*' | '/' => {
                 finish_token(&mut buffer, string, line)?;
                 buffer.push(character);
                 finish_token(&mut buffer, string, line)?;
@@ -262,10 +264,9 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
                     finish_token(&mut buffer, string, line)?;
                 }
             }
-            ' ' | '\t'
-                if !string => {
-                    finish_token(&mut buffer, string, line)?;
-                }
+            ' ' | '\t' if !string => {
+                finish_token(&mut buffer, string, line)?;
+            }
             '\n' => {
                 line += 1;
                 if !string {

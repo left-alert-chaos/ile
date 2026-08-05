@@ -3,13 +3,8 @@
 //! that can show up in source code--a code block holding other nodes, a function call holding
 //! values to pass, or things like numbers, booleans or string declarations.
 
-use crate::{
-    FunctionSignature,
-    Object,
-    DataType,
-    Executable,
-};
 use super::scope::ScopeStack;
+use crate::{DataType, Executable, FunctionSignature, Object};
 
 use std::ops::Deref;
 
@@ -33,7 +28,7 @@ pub enum Node<'a> {
         /// something like `["object", "attribute", "method"]`.
         path: Path,
     },
-    
+
     /// Represents functions
     CodeBlock(Children<'a>), // children should be Chain
 
@@ -49,7 +44,7 @@ pub enum Node<'a> {
 
     /// Represents a `DataType` definition.
     DataType(DataType<'a>),
-    
+
     /// Represents the root of one module. Modules can hold others.
     Root {
         name: String,
@@ -87,21 +82,25 @@ impl Node<'_> {
             Self::Assignment { .. } => self.assignment_add_child(child),
             Self::DataType(_) => self.data_type_add_child(child),
             Self::Root { .. } => self.root_add_child(child),
-            _ => Err(String::from("internal: Node::Variable and Node::Literal cannot have children assigned to them.")),
+            _ => Err(String::from(
+                "internal: Node::Variable and Node::Literal cannot have children assigned to them.",
+            )),
         }
     }
 
     /// Add a child to a `Call`
     fn call_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::Call { arguments, path } = self else {
-            panic!("Node::call_add_child(): Tried to add call child but parent isn't a Node::Call!");
+            panic!(
+                "Node::call_add_child(): Tried to add call child but parent isn't a Node::Call!"
+            );
         };
 
         arguments.push(child);
 
         *self = Self::Call {
             arguments: arguments.clone(),
-            path: path.clone()
+            path: path.clone(),
         };
 
         Ok(())
@@ -110,7 +109,9 @@ impl Node<'_> {
     /// Add a child to a `CodeBlock`
     fn code_block_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::CodeBlock(children) = self else {
-            panic!("Node::code_block_add_child(): Tried to add a code block child but parent isn't a Node::CodeBlock!");
+            panic!(
+                "Node::code_block_add_child(): Tried to add a code block child but parent isn't a Node::CodeBlock!"
+            );
         };
 
         children.push(child);
@@ -122,36 +123,44 @@ impl Node<'_> {
     /// Add a child to a `Chain`
     fn chain_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::Chain(children) = self else {
-            panic!("Node::chain_add_child(): Tried to add a chain child but parent isn't a Node::Chain!");
+            panic!(
+                "Node::chain_add_child(): Tried to add a chain child but parent isn't a Node::Chain!"
+            );
         };
 
         children.push(child);
         *self = Self::Chain(children.clone());
-         Ok(())
+        Ok(())
     }
 
     /// Set value of `Assignment`
     fn assignment_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::Assignment { name, .. } = self else {
-            panic!("Node::assignment_add_child(): Tried to set value but parent isn't Node::Assignment!");
+            panic!(
+                "Node::assignment_add_child(): Tried to set value but parent isn't Node::Assignment!"
+            );
         };
 
         *self = Self::Assignment {
             name: name.clone(),
             value: Box::new(child), // put the child in a box, haha
         };
-        
+
         Ok(())
     }
 
     /// Add an attribute or method to a DataType
     fn data_type_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::DataType(data_type) = self else {
-            panic!("Node::data_type_add_child(): Tried to add a DataType child but parent isn't Node::DataType!");
+            panic!(
+                "Node::data_type_add_child(): Tried to add a DataType child but parent isn't Node::DataType!"
+            );
         };
 
         let Self::Assignment { name, value } = child else {
-            return Err(String::from("only assignments are allowed in datatype definitions"));
+            return Err(String::from(
+                "only assignments are allowed in datatype definitions",
+            ));
         };
 
         // only code blocks and literals are allowed to be assigned in datatype definitions
@@ -164,7 +173,11 @@ impl Node<'_> {
             Node::Literal(obj) => {
                 let _ = data_type.attributes.insert(name, obj);
             }
-            _ => return Err(String::from("only assignments to functions or literals are allowed in datatype definitions"))
+            _ => {
+                return Err(String::from(
+                    "only assignments to functions or literals are allowed in datatype definitions",
+                ));
+            }
         }
 
         *self = Self::DataType(data_type.clone());
@@ -174,8 +187,16 @@ impl Node<'_> {
 
     /// Add a child to a Root, which can either be another Root or a Chain
     fn root_add_child(&mut self, child: Self) -> Result<(), String> {
-        let Self::Root { imports, types, statements, .. } = self else {
-            panic!("Node::root_add_child(): Tried to add a Root child but parent isn't Node::Root!");
+        let Self::Root {
+            imports,
+            types,
+            statements,
+            ..
+        } = self
+        else {
+            panic!(
+                "Node::root_add_child(): Tried to add a Root child but parent isn't Node::Root!"
+            );
         };
 
         // determine how to store child based on child type
@@ -187,7 +208,11 @@ impl Node<'_> {
                 statements.push(child);
             }
             Self::DataType(dt) => types.push(dt),
-            _ => return Err(String::from("only data type definitions, chains, assignments and imports are allowed in modules.")),
+            _ => {
+                return Err(String::from(
+                    "only data type definitions, chains, assignments and imports are allowed in modules.",
+                ));
+            }
         }
 
         Ok(())

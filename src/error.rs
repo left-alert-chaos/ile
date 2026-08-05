@@ -3,10 +3,7 @@
 //! are generated when a piece of source code can't be tokenized, tokens can't be parsed into and
 //! AST, or an AST misuses a value or uses a value that doesn't exist.
 
-use std::{
-    fmt,
-    error,
-};
+use std::{error, fmt};
 
 /// # Error
 /// This type represents an issue with tokenization, parsing, or execution. It is often returned
@@ -36,11 +33,7 @@ impl Error<'_> {
     pub fn format(&self) -> String {
         format!(
             "{} error at line {} and col {} in file {}:\n{}",
-            self.location,
-            self.line,
-            self.col,
-            self.file,
-            self.message,
+            self.location, self.line, self.col, self.file, self.message,
         )
     }
 }
