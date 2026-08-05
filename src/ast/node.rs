@@ -62,6 +62,24 @@ pub enum Node<'a> {
 }
 
 impl Node<'_> {
+    /// Determine if the provided String is a known type or classification
+    pub fn is_type_or_class(&self, name: String) -> Option<bool> {
+        let Self::Root { types, .. } = self else {
+            return None;
+        };
+
+        for t in types {
+            if t.name == name {
+                return Some(true);
+            }
+        }
+
+        match name.as_str() {
+            "Integer" | "Boolean" | "Float" | "String" | "Function" => Some(true),
+            _ => Some(false),
+        }
+    }
+
     /// Create a new `Node::Root`
     pub fn new_root(name: String) -> Self {
         Self::Root {
