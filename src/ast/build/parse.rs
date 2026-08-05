@@ -11,10 +11,14 @@ use crate::{
 
 impl<'a> Node<'a> {
     /// Parse a `Vec<Token>` into a `Node::Root`
-    pub fn parse(tokens: Vec<Token>) -> Self {
-        let mut root = Self::new_root();
+    /// Tokenization happens by storing a parent and child node. The parser creates a child node and
+    /// calls the parent's `add_child()` method to appropriately store the new node.
+    pub fn parse(tokens: Vec<Token>, fname: String) -> Self {
+        let mut root = Self::new_root(fname.clone());
 
+        for token in tokens {
 
+        }
 
         root
     }
