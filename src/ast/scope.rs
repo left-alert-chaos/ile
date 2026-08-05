@@ -33,6 +33,32 @@ impl<'a> ScopeStack<'a> {
         }
     }
 
+    /// Search for the given variable name in the stack. If it is found, change its value.
+    /// Otherwise, create a new variable with the given name and value in the topmost
+    /// (shortest-living and most recent) scope.
+    pub fn set(&mut self, vname: String, value: Object<'a>) {
+        for var in self.current_stack.iter_mut() {
+            let Variable::Var { name, .. } = var else {
+                continue;
+            };
+
+            if *name == vname {
+                *var = Variable::Var {
+                    name: vname,
+                    value,
+                };
+
+                return;
+            }
+        }
+
+        // if we haven't already returned, create a new var
+        self.push(Variable::Var {
+            name: vname,
+            value,
+        });
+    }
+
     /// Push a variable onto the end of the current stack.
     pub fn push(&mut self, var: Variable<'a>) {
         self.current_stack.push(var);
