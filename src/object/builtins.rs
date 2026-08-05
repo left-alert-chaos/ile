@@ -15,7 +15,7 @@ pub type FunctionSignature<'a> = Vec<Object<'a>>;
 #[derive(Clone)]
 pub enum Executable<'a> {
     /// An executable object that is composed of Ile statements.
-    CodeBlock(&'a Node<'a>),
+    CodeBlock(Box<Node<'a>>),
 
     /// A wrapper around a Rust function that is callable by Ile code.
     Wrapper {

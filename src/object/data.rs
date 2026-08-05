@@ -8,8 +8,9 @@ use super::Object;
 /// # DataType
 /// This struct represents a data type in Ile. It contains the methods and attributes that objects
 /// that have a type must have.
+#[derive(Clone)]
 pub struct DataType<'a> {
-    pub methods: HashMap<&'a str, Object<'a>>,
-    pub attributes: HashMap<&'a str, Object<'a>>,
+    pub methods: HashMap<String, Object<'a>>,
+    pub attributes: HashMap<String, Object<'a>>,
     pub name: String,
 }
