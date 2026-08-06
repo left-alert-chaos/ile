@@ -11,8 +11,8 @@
 /// processed information.
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    ttype: TokenType,
-    line: u64,
+    pub ttype: TokenType,
+    pub line: u64,
 }
 
 impl Token {
@@ -268,12 +268,12 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
                 finish_token(&mut buffer, string, line)?;
             }
             '\n' => {
-                line += 1;
                 if !string {
                     finish_token(&mut buffer, string, line)?;
                 } else {
                     buffer.push('\n');
                 }
+                line += 1;
             }
             _ => {
                 buffer.push(character);
@@ -287,4 +287,18 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
     finish_token(&mut buffer, string, line)?;
 
     Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn proper_line() {
+        let token = tokenize("
+
+        15
+            ").unwrap();
+        assert_eq!(token[0].line, 3);
+    }
 }
