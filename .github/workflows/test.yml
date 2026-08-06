@@ -1,0 +1,14 @@
+name: Run the fucking tests already
+
+on: push
+
+jobs:
+  cargo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: cargo test
+        run: cargo test
