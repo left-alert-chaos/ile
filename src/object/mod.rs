@@ -146,17 +146,37 @@ pub enum Variable<'a> {
     /// This is the default variant and represents all values.
     Var { name: String, value: Object<'a> },
 
+    /// This variant represents a `datatype`, which is stored on the stack like all other values.
+    Datatype { name: String, dt: DataType<'a>, },
+
     /// This variant represents a switch between scopes and is used to determine what part of the
     /// stack to keep what what part to remove.
     StackDivider,
 }
 
-impl Variable<'_> {
+impl<'a> Variable<'a> {
     /// Return whether this `Variable` is a `StackDivider` or a `Var`
     pub fn is_divider(&self) -> bool {
         match self {
-            Self::Var { .. } => false,
             Self::StackDivider => true,
+            _ => false,
+        }
+    }
+
+    /// Return the name of the variable, if it has one.
+    pub fn name(&self) -> Option<String> {
+        match self {
+            Self::Var { name, .. } => Some(name.clone()),
+            Self::Datatype { name, .. } => Some(name.clone()),
+            Self::StackDivider => None,
+        }
+    }
+
+    /// Creates a new `Variable::Datatype` from a given `DataType`
+    pub fn new_datatype(dt: DataType<'a>) -> Self {
+        Self::Datatype {
+            name: dt.name.clone(),
+            dt: dt,
         }
     }
 }

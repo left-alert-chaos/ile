@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{DataType, Executable, FunctionSignature, Object};
+use crate::{DataType, Executable, FunctionSignature, Object, Variable};
 
 use std::ops::Deref;
 
@@ -40,6 +40,8 @@ pub enum Node<'a> {
     Assignment {
         name: String,
         value: Box<Self>, // child should be Chain
+        classification: Option<Object<'a>>, // child should be Variable, for a lookup for the right
+                                            // type.
     },
 
     /// Represents a `DataType` definition.
@@ -50,7 +52,6 @@ pub enum Node<'a> {
         name: String,
         stack: ScopeStack<'a>,
         imports: Children<'a>, // children should be Root
-        types: Vec<DataType<'a>>,
         statements: Children<'a>, // holds executable children, so Chains and Assigments
     },
 
@@ -63,20 +64,19 @@ pub enum Node<'a> {
 
 impl Node<'_> {
     /// Determine if the provided String is a known type or classification
-    pub fn is_type_or_class(&self, name: String) -> Option<bool> {
-        let Self::Root { types, .. } = self else {
-            return None;
+    pub fn is_type_or_class(&mut self, name: String) -> bool {
+        let Self::Root { stack, .. } = self else {
+            panic!("called is_type_or_class on a non-root Node!");
         };
 
-        for t in types {
-            if t.name == name {
-                return Some(true);
-            }
+        let lookup = stack.lookup(&name);
+        if let Some(Variable::Datatype { .. }) = lookup {
+            return true;
         }
 
         match name.as_str() {
-            "Integer" | "Boolean" | "Float" | "String" | "Function" => Some(true),
-            _ => Some(false),
+            "Integer" | "Boolean" | "Float" | "String" | "Function" => true,
+            _ => false,
         }
     }
 
@@ -86,7 +86,6 @@ impl Node<'_> {
             name,
             stack: ScopeStack::new(),
             imports: Vec::new(),
-            types: Vec::new(),
             statements: Vec::new(),
         }
     }
@@ -153,7 +152,7 @@ impl Node<'_> {
 
     /// Set value of `Assignment`
     fn assignment_add_child(&mut self, child: Self) -> Result<(), String> {
-        let Self::Assignment { name, .. } = self else {
+        let Self::Assignment { name, classification, .. } = self else {
             panic!(
                 "Node::assignment_add_child(): Tried to set value but parent isn't Node::Assignment!"
             );
@@ -162,6 +161,7 @@ impl Node<'_> {
         *self = Self::Assignment {
             name: name.clone(),
             value: Box::new(child), // put the child in a box, haha
+            classification: classification.clone(),
         };
 
         Ok(())
@@ -175,7 +175,7 @@ impl Node<'_> {
             );
         };
 
-        let Self::Assignment { name, value } = child else {
+        let Self::Assignment { name, value, .. } = child else {
             return Err(String::from(
                 "only assignments are allowed in datatype definitions",
             ));
@@ -207,8 +207,8 @@ impl Node<'_> {
     fn root_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::Root {
             imports,
-            types,
             statements,
+            stack,
             ..
         } = self
         else {
@@ -225,7 +225,7 @@ impl Node<'_> {
             Self::Chain { .. } | Self::Assignment { .. } => {
                 statements.push(child);
             }
-            Self::DataType(dt) => types.push(dt),
+            Self::DataType(dt) => stack.push(Variable::new_datatype(dt)),
             _ => {
                 return Err(String::from(
                     "only data type definitions, chains, assignments and imports are allowed in modules.",

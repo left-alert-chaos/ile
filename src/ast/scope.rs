@@ -36,9 +36,11 @@ impl<'a> ScopeStack<'a> {
     /// Search for the given variable name in the stack. If it is found, change its value.
     /// Otherwise, create a new variable with the given name and value in the topmost
     /// (shortest-living and most recent) scope.
+    /// WARNING: Because the stack is also responsible for holding the `datatype`s, this can
+    /// and will overwrite a `datatype` if it is given the right name.
     pub fn set(&mut self, vname: String, value: Object<'a>) {
         for var in self.current_stack.iter_mut() {
-            let Variable::Var { name, .. } = var else {
+            let Some(name) = var.name() else {
                 continue;
             };
 
@@ -69,10 +71,10 @@ impl<'a> ScopeStack<'a> {
     // That's not going to happen, right? RIGHT!???!
     /// Search in reversed order through all variables on the stack. If one of them has the
     /// requested name, return that one. If none of them do, return None.
-    pub fn lookup(&mut self, searched_name: &mut String) -> Option<&mut Variable<'a>> {
+    pub fn lookup(&mut self, searched_name: &String) -> Option<&mut Variable<'a>> {
         for var in self.current_stack.iter_mut().rev() {
-            if let Variable::Var { name, .. } = var
-                && name == searched_name
+            if let Some(name) = var.name()
+                && name == *searched_name
             {
                 return Some(var);
             }
