@@ -56,6 +56,25 @@ pub enum Node<'a> {
     /// Represents a `DataType` definition.
     DataType(DataType<'a>),
 
+    /// Represents a `while` loop.
+    While {
+        condition: Option<Box<Self>>, // should be Chain
+        chains: Children<'a>, // should also be Chain
+    },
+
+    /// Represents a `for` loop.
+    For {
+        condition: Option<Box<Self>>, // should be Assignment
+        chains: Children<'a>,
+    },
+
+    /// Represents an `if` block.
+    If {
+        condition: Option<Box<Self>>, // should be Chain
+        chains: Children<'a>,
+        secondary_conditions: Children<'a>, // should be If
+    },
+
     /// Represents the root of one module. Modules can hold others.
     Root {
         name: String,
@@ -108,6 +127,9 @@ impl Node<'_> {
             Self::Assignment { .. } => self.assignment_add_child(child),
             Self::DataType(_) => self.data_type_add_child(child),
             Self::Root { .. } => self.root_add_child(child),
+            Self::While { .. } => self.while_add_child(child),
+            Self::For { .. } => self.for_add_child(child),
+            Self::If { .. } => self.if_add_child(child),
             _ => Err(String::from(
                 "internal: Node::Variable, Node::TypeHint, and Node::Literal cannot have children assigned to them.",
             )),
@@ -249,6 +271,65 @@ impl Node<'_> {
                 ));
             }
         }
+
+        Ok(())
+    }
+
+    fn while_add_child(&mut self, child: Self) -> Result<(), String> {
+        let Self::While { condition, chains } = self else {
+            panic!("Node::while_add_child(): Tried to add a While child but parent isn't Node::While!");
+        };
+
+        if condition.is_none() {
+            *condition = Some(Box::new(child));
+        } else {
+            chains.push(child);
+        }
+
+        *self = Self::While {
+            condition: condition.clone(),
+            chains: chains.clone(),
+        };
+
+        Ok(())
+    }
+
+    fn for_add_child(&mut self, child: Self) -> Result<(), String> {
+        let Self::For { condition, chains } = self else {
+            panic!("Node::for_add_child(): Tried to add a For child but paren't isn't Node::For!");
+        };
+
+        if condition.is_none() {
+            *condition = Some(Box::new(child));
+        } else {
+            chains.push(child);
+        }
+
+        *self = Self::For { condition: condition.clone(), chains: chains.clone() };
+
+        Ok(())
+    }
+
+    fn if_add_child(&mut self, child: Self) -> Result<(), String> {
+        let Self::If { condition, chains, secondary_conditions } = self else {
+            panic!("Node::if_add_child(): Tried to add an If child but parent isn't Node::If!");
+        };
+
+        if condition.is_none() {
+            *condition = Some(Box::new(child));
+        } else {
+            match child {
+                Self::Chain { .. } => chains.push(child),
+                Self::If { .. } => secondary_conditions.push(child),
+                _ => return Err(String::from("if blocks can only have conditions, chains, and blocks as children"))
+            }
+        }
+
+        *self = Self::If {
+            condition: condition.clone(),
+            chains: chains.clone(),
+            secondary_conditions: secondary_conditions.clone(),
+        };
 
         Ok(())
     }
