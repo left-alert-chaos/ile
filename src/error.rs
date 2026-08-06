@@ -40,6 +40,12 @@ impl Error<'_> {
 
 impl error::Error for Error<'_> {}
 
+impl From<Error<'_>> for String {
+    fn from(value: Error<'_>) -> Self {
+        value.format()
+    }
+}
+
 #[derive(Clone, Debug)]
 /// # PipelineLocation
 /// This type represents where in the interpretation pipeline an error occurred.
