@@ -9,7 +9,7 @@
 /// # Token
 /// This is a struct holding both a `TokenType` and a line number for debugging. It is one piece of
 /// processed information.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub ttype: TokenType,
     pub line: u64,
@@ -25,7 +25,7 @@ impl Token {
 
 /// # TokenType
 /// This is an enum representing the type of a processed token of source code.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TokenType {
     /// A token for (
     OpenParen,
@@ -293,6 +293,16 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
 mod tests {
     use super::*;
 
+    // Helper to extract TokenType
+    fn token_types(code: impl ToString) -> Result<Vec<TokenType>, String> {
+        let tokens = tokenize(code)?;
+        let mut types = Vec::new();
+        for token in tokens {
+            types.push(token.ttype);
+        }
+        Ok(types)
+    }
+
     #[test]
     fn proper_line() {
         let token = tokenize("
@@ -300,5 +310,18 @@ mod tests {
         15
             ").unwrap();
         assert_eq!(token[0].line, 3);
+    }
+
+    #[test]
+    fn float() {
+        let token = tokenize("3.1415926535").unwrap()[0].clone();
+        assert_eq!(token.ttype, TokenType::Float(3.1415926535));
+    }
+
+    #[test]
+    fn path() {
+        let tokens = token_types("obj.attr.attr").unwrap();
+        let expected = Vec::from([TokenType::Word(String::from("obj")), TokenType::PathSeparator, TokenType::Word(String::from("attr")), TokenType::PathSeparator, TokenType::Word(String::from("attr"))]);
+        assert_eq!(tokens, expected);
     }
 }
