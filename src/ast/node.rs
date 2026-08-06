@@ -30,7 +30,10 @@ pub enum Node<'a> {
     },
 
     /// Represents functions
-    CodeBlock(Children<'a>), // children should be Chain
+    CodeBlock {
+        chains: Children<'a>, // children should be Chain
+        signature: FunctionSignature<'a>,
+    },
 
     /// Represents a statement. It holds a `Vec` of `Node::Call`, `Node::Variable`, or
     /// `Node::Literal`s to allow for method chaining.
@@ -42,6 +45,12 @@ pub enum Node<'a> {
         value: Box<Self>, // child should be Chain
         classification: Option<Object<'a>>, // child should be Variable, for a lookup for the right
                                             // type.
+    },
+
+    /// Represents assigning a type to a variable.
+    TypeHint {
+        name: String,
+        classification: Object<'a>,
     },
 
     /// Represents a `DataType` definition.
@@ -100,7 +109,7 @@ impl Node<'_> {
             Self::DataType(_) => self.data_type_add_child(child),
             Self::Root { .. } => self.root_add_child(child),
             _ => Err(String::from(
-                "internal: Node::Variable and Node::Literal cannot have children assigned to them.",
+                "internal: Node::Variable, Node::TypeHint, and Node::Literal cannot have children assigned to them.",
             )),
         }
     }
@@ -125,14 +134,22 @@ impl Node<'_> {
 
     /// Add a child to a `CodeBlock`
     fn code_block_add_child(&mut self, child: Self) -> Result<(), String> {
-        let Self::CodeBlock(children) = self else {
+        let Self::CodeBlock { chains, signature } = self else {
             panic!(
                 "Node::code_block_add_child(): Tried to add a code block child but parent isn't a Node::CodeBlock!"
             );
         };
 
-        children.push(child);
-        *self = Self::CodeBlock(children.clone());
+        match child {
+            Self::Chain(_) => chains.push(child),
+            Self::TypeHint { classification, .. } => signature.push(classification),
+            _ => return Err(String::from("code blocks can only have classification hints and chains as children")),
+        }
+
+        *self = Self::CodeBlock {
+            chains: chains.clone(),
+            signature: signature.clone()
+        };
 
         Ok(())
     }
@@ -183,7 +200,7 @@ impl Node<'_> {
 
         // only code blocks and literals are allowed to be assigned in datatype definitions
         match *value {
-            Node::CodeBlock(_) => {
+            Node::CodeBlock { .. } => {
                 // create a Function out of the CodeBlock
                 let func = Object::Function(Executable::CodeBlock(value));
                 data_type.methods.insert(name, func);
