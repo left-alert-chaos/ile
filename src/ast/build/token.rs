@@ -48,6 +48,9 @@ pub enum TokenType {
     /// A token for a path separator or "dot"
     PathSeparator,
 
+    /// A token for a comma (,)
+    Comma,
+
     /// A token for the end of a statement, which is a semicolon (;)
     ChainEnd,
 
@@ -121,6 +124,7 @@ impl TokenType {
                 '{' => return Ok(Self::OpenBrace),
                 '}' => return Ok(Self::CloseBrace),
                 '.' => return Ok(Self::PathSeparator),
+                ',' => return Ok(Self::Comma),
                 ';' => return Ok(Self::ChainEnd),
                 '=' => return Ok(Self::Assignment),
                 '<' => return Ok(Self::LessThan),
@@ -189,10 +193,7 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
 
         // Attempt to tokenize buffer
         match Token::from(b.clone(), line) {
-            Ok(token) => {
-                println!("Created token {token:?} from buffer {b}");
-                tokens.push(token)
-            }
+            Ok(token) => tokens.push(token),
             Err(reason) => return Err(reason),
         }
         b.clear();
@@ -204,7 +205,7 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
         match character {
             // single-character tokens are processed by sending complete previous token and then
             // sending them by themselves
-            ';' | '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '+' | '-' | '*' | '/' => {
+            ';' | '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '+' | '-' | '*' | '/' | ',' => {
                 finish_token(&mut buffer, string, line)?;
                 buffer.push(character);
                 finish_token(&mut buffer, string, line)?;
@@ -323,5 +324,11 @@ mod tests {
         let tokens = token_types("obj.attr.attr").unwrap();
         let expected = Vec::from([TokenType::Word(String::from("obj")), TokenType::PathSeparator, TokenType::Word(String::from("attr")), TokenType::PathSeparator, TokenType::Word(String::from("attr"))]);
         assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn comma() {
+        let token = token_types(",").unwrap()[0].clone();
+        assert_eq!(token, TokenType::Comma);
     }
 }
