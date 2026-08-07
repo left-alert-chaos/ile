@@ -28,7 +28,7 @@ impl<'a> ScopeStack<'a> {
     /// Create a new `ScopeStack` with one `Variable::StackDivider` in the stack already.
     pub fn new() -> Self {
         Self {
-            current_stack: Vec::from([Variable::StackDivider]),
+            current_stack: Vec::from([Variable::StackDivider(None)]),
             cached_scopes: Vec::new(),
         }
     }
@@ -144,6 +144,26 @@ impl<'a> ScopeStack<'a> {
         Ok(())
     }
 
+    /// Pop until a `Variable::StackDivider(Some(ScopeType::Function))` is found. Used to remove unused values
+    /// after a function returns.
+    /// Ass with all other operations, if it runs out of variables to pop, it restores all of the
+    /// impacted vars and returns an `Err()`
+    fn return_cleanup(&mut self) -> Result<(), ScopeError> {
+        let mut bin = Vec::new();
+
+        loop {
+            let Some(var) = self.current_stack.pop() else {
+                self.restore_scope(bin);
+                return Err(ScopeError::OutOfVars);
+            };
+            
+            match var {
+                Variable::StackDivider(Some(ScopeType::Function)) => return Ok(()),
+                _ => bin.push(var),
+            }
+        }
+    }
+
     /// Used by `restore_scopes()` and `cache_scopes()`
     fn restore_scope(&mut self, mut scope: Vec<Variable<'a>>) {
         while let Some(var) = scope.pop() {
@@ -193,7 +213,7 @@ mod tests {
             name: String::from("pi"),
             value: Object::Integer(10),
         });
-        stack.push(Variable::StackDivider);
+        stack.push(Variable::StackDivider(None));
         stack.push(Variable::Var {
             name: String::from("siiiix_seeeeeven"),
             value: Object::Integer(67),

@@ -151,14 +151,14 @@ pub enum Variable<'a> {
 
     /// This variant represents a switch between scopes and is used to determine what part of the
     /// stack to keep what what part to remove.
-    StackDivider,
+    StackDivider(Option<ScopeType>),
 }
 
 impl<'a> Variable<'a> {
     /// Return whether this `Variable` is a `StackDivider` or a `Var`
     pub fn is_divider(&self) -> bool {
         match self {
-            Self::StackDivider => true,
+            Self::StackDivider(_) => true,
             _ => false,
         }
     }
@@ -168,7 +168,7 @@ impl<'a> Variable<'a> {
         match self {
             Self::Var { name, .. } => Some(name.clone()),
             Self::Datatype { name, .. } => Some(name.clone()),
-            Self::StackDivider => None,
+            Self::StackDivider(_) => None,
         }
     }
 
@@ -179,4 +179,16 @@ impl<'a> Variable<'a> {
             dt: dt,
         }
     }
+}
+
+/// # ScopeType
+/// This represents any of the kinds of dividers there are. This is used to determine how far back
+/// to pop off the stack when a scope ends or a `return` statement is encountered.
+#[derive(Clone, Copy)]
+pub enum ScopeType {
+    /// Represents a function scope
+    Function,
+
+    /// Represents a loop scope
+    Loop,
 }
