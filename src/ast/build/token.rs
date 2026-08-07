@@ -6,6 +6,8 @@
 //! This module is private because it shouldn't be necessary if you are implementing the interpreter
 //! inside a preexisting application.
 
+use std::fmt;
+
 /// # Token
 /// This is a struct holding both a `TokenType` and a line number for debugging. It is one piece of
 /// processed information.
@@ -108,6 +110,43 @@ pub enum TokenType {
     /// A token for anything that doesn't fit into any other bucket; it's usually object and type
     /// names.
     Word(String),
+}
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // I've never seen a match statement this _stupid_ in my life, but here we are
+        let phrase = match self {
+            Self::OpenParen => "OpenParen".to_string(),
+            Self::CloseParen => "CloseParen".to_string(),
+            Self::OpenBracket => "OpenBracket".to_string(),
+            Self::CloseBracket => "CloseBracket".to_string(),
+            Self::OpenBrace => "OpenBrace".to_string(),
+            Self::CloseBrace => "CloseBrace".to_string(),
+            Self::PathSeparator => "PathSeparator (period)".to_string(),
+            Self::Comma => "Comma".to_string(),
+            Self::ChainEnd => "ChainEnd (semicolon)".to_string(),
+            Self::Assignment => "Assignment (single equals sign)".to_string(),
+            Self::LessThan => "LessThan".to_string(),
+            Self::GreaterThan => "GreaterThan".to_string(),
+            Self::Addition => "Addition".to_string(),
+            Self::Subtraction => "Subtraction".to_string(),
+            Self::Multiplication => "Multiplication".to_string(),
+            Self::Division => "Division".to_string(),
+            Self::LessThanOrEqualTo => "LessThanOrEqualTo".to_string(),
+            Self::GreaterThanOrEqualTo => "GreaterThanOrEqualTo".to_string(),
+            Self::Equality => "Equality (double equals sign)".to_string(),
+            Self::NotEqualTo => "NotEqualTo".to_string(),
+            Self::Not => "Not".to_string(),
+            Self::String(s) => format!("String '{s}'"),
+            Self::Integer(i) => format!("Integer {i}"),
+            Self::Float(f) => format!("Float {f}"),
+            Self::Boolean(b) => format!("Boolean {b}"),
+            Self::Datatype => "Datatype".to_string(),
+            Self::Word(w) => format!("Word '{w}'"),
+        };
+
+        write!(f, "{phrase}")
+    }
 }
 
 impl TokenType {
