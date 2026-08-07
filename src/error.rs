@@ -5,6 +5,8 @@
 
 use std::{error, fmt};
 
+use crate::*;
+
 /// # Error
 /// This type represents an issue with tokenization, parsing, or execution. It is often returned
 /// inside an `Err(Error)`.
@@ -12,8 +14,7 @@ pub struct Error<'a> {
     message: String,
     location: PipelineLocation,
     file: &'a str,
-    line: u32,
-    col: u32,
+    line: Option<u64>,
 }
 
 impl fmt::Display for Error<'_> {
@@ -28,12 +29,36 @@ impl fmt::Debug for Error<'_> {
     }
 }
 
-impl Error<'_> {
+impl<'a> Error<'a> {
+    /// Create an `Error` in the parsing pipeline stage with the given message and token
+    pub fn new_parsing(token: Option<Token>, message: impl ToString, file: &'a str) -> Self {
+        let line;
+        if let Some(token) = token {
+            line = Some(token.line);
+        } else {
+            line = None;
+        }
+
+        Self {
+            message: message.to_string(),
+            location: PipelineLocation::Parsing,
+            file,
+            line,
+        }
+    }
+
     /// Create a detailed error message including location, type, and reason.
     pub fn format(&self) -> String {
+        let line;
+        if let Some(line_num) = self.line {
+            line = format!("{line_num}");
+        } else {
+            line = String::from("unknown");
+        }
+
         format!(
-            "{} error at line {} and col {} in file {}:\n{}",
-            self.location, self.line, self.col, self.file, self.message,
+            "{} error at line {} in file {}:\n{}",
+            self.location, line, self.file, self.message,
         )
     }
 }
