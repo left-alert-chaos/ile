@@ -41,8 +41,9 @@ pub enum Node<'a> {
     Assignment {
         name: String,
         value: Box<Self>, // child should be Chain
-        classification: Option<Object<'a>>, // child should be Variable, for a lookup for the right
-                                            // type.
+
+        /// Represents whether this is a `let` statement (creating a variable) or a reassignment
+        create: bool,
     },
 
     /// Represents a `DataType` definition.
@@ -182,7 +183,7 @@ impl Node<'_> {
 
     /// Set value of `Assignment`
     fn assignment_add_child(&mut self, child: Self) -> Result<(), String> {
-        let Self::Assignment { name, classification, .. } = self else {
+        let Self::Assignment { name, create, .. } = self else {
             panic!(
                 "Node::assignment_add_child(): Tried to set value but parent isn't Node::Assignment!"
             );
@@ -190,8 +191,8 @@ impl Node<'_> {
 
         *self = Self::Assignment {
             name: name.clone(),
-            value: Box::new(child), // put the child in a box, haha
-            classification: classification.clone(),
+            value: Box::new(child), // put the child in a box, haha funny
+            create: create.clone(),
         };
 
         Ok(())
