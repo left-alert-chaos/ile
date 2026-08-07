@@ -6,8 +6,6 @@
 use super::scope::ScopeStack;
 use crate::{DataType, Executable, FunctionSignature, Object, Variable};
 
-use std::ops::Deref;
-
 /// # Path
 /// This is an alias for `Vec<String>` and used to represent a path to an object.
 type Path = Vec<String>;
@@ -47,12 +45,6 @@ pub enum Node<'a> {
                                             // type.
     },
 
-    /// Represents assigning a type to a variable.
-    TypeHint {
-        name: String,
-        classification: Object<'a>,
-    },
-
     /// Represents a `DataType` definition.
     DataType(DataType<'a>),
 
@@ -64,7 +56,7 @@ pub enum Node<'a> {
 
     /// Represents a `for` loop.
     For {
-        condition: Option<Box<Self>>, // should be Assignment
+        condition: Option<Box<Self>>, // should be anything executable
         chains: Children<'a>,
     },
 
@@ -131,7 +123,7 @@ impl Node<'_> {
             Self::For { .. } => self.for_add_child(child),
             Self::If { .. } => self.if_add_child(child),
             _ => Err(String::from(
-                "internal: Node::Variable, Node::TypeHint, and Node::Literal cannot have children assigned to them.",
+                "internal: Node::Variable and Node::Literal cannot have children assigned to them.",
             )),
         }
     }
@@ -164,8 +156,7 @@ impl Node<'_> {
 
         match child {
             Self::Chain(_) => chains.push(child),
-            Self::TypeHint { classification, .. } => signature.push(classification),
-            _ => return Err(String::from("code blocks can only have classification hints and chains as children")),
+            _ => return Err(String::from("code blocks can only have chains as children")),
         }
 
         *self = Self::CodeBlock {
