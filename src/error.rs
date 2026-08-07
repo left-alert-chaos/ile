@@ -10,28 +10,28 @@ use crate::*;
 /// # Error
 /// This type represents an issue with tokenization, parsing, or execution. It is often returned
 /// inside an `Err(Error)`.
-pub struct Error<'a> {
+pub struct Error {
     message: String,
     location: PipelineLocation,
-    file: &'a str,
+    file: String,
     line: Option<u64>,
 }
 
-impl fmt::Display for Error<'_> {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.format())
     }
 }
 
-impl fmt::Debug for Error<'_> {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.format())
     }
 }
 
-impl<'a> Error<'a> {
+impl<'a> Error {
     /// Create an `Error` in the parsing pipeline stage with the given message and token
-    pub fn new_parsing(token: Option<Token>, message: impl ToString, file: &'a str) -> Self {
+    pub fn new_parsing(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
         let line;
         if let Some(token) = token {
             line = Some(token.line);
@@ -42,7 +42,7 @@ impl<'a> Error<'a> {
         Self {
             message: message.to_string(),
             location: PipelineLocation::Parsing,
-            file,
+            file: file.to_string(),
             line,
         }
     }
@@ -63,10 +63,10 @@ impl<'a> Error<'a> {
     }
 }
 
-impl error::Error for Error<'_> {}
+impl error::Error for Error {}
 
-impl From<Error<'_>> for String {
-    fn from(value: Error<'_>) -> Self {
+impl From<Error> for String {
+    fn from(value: Error) -> Self {
         value.format()
     }
 }
