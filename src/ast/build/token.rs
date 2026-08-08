@@ -150,6 +150,15 @@ impl fmt::Display for TokenType {
 }
 
 impl TokenType {
+    pub fn is_operator(&self) -> bool {
+        match self {
+            Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo => {
+                true
+            }
+            _ => false,
+        }
+    }
+
     fn from(mut value: String) -> Result<Self, String> {
         let len = value.len();
 
