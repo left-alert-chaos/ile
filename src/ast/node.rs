@@ -52,7 +52,7 @@ pub enum Node<'a> {
     /// Represents a `while` loop.
     While {
         condition: Option<Box<Self>>, // should be Chain
-        chains: Children<'a>, // should also be Chain
+        chains: Children<'a>,         // should also be Chain
     },
 
     /// Represents a `for` loop.
@@ -72,7 +72,7 @@ pub enum Node<'a> {
     Root {
         name: String,
         stack: ScopeStack<'a>,
-        imports: Children<'a>, // children should be Root
+        imports: Children<'a>,    // children should be Root
         statements: Children<'a>, // holds executable children, so Chains and Assigments
     },
 
@@ -162,7 +162,7 @@ impl Node<'_> {
 
         *self = Self::CodeBlock {
             chains: chains.clone(),
-            signature: signature.clone()
+            signature: signature.clone(),
         };
 
         Ok(())
@@ -269,7 +269,9 @@ impl Node<'_> {
 
     fn while_add_child(&mut self, child: Self) -> Result<(), String> {
         let Self::While { condition, chains } = self else {
-            panic!("Node::while_add_child(): Tried to add a While child but parent isn't Node::While!");
+            panic!(
+                "Node::while_add_child(): Tried to add a While child but parent isn't Node::While!"
+            );
         };
 
         if condition.is_none() {
@@ -297,13 +299,21 @@ impl Node<'_> {
             chains.push(child);
         }
 
-        *self = Self::For { condition: condition.clone(), chains: chains.clone() };
+        *self = Self::For {
+            condition: condition.clone(),
+            chains: chains.clone(),
+        };
 
         Ok(())
     }
 
     fn if_add_child(&mut self, child: Self) -> Result<(), String> {
-        let Self::If { condition, chains, secondary_conditions } = self else {
+        let Self::If {
+            condition,
+            chains,
+            secondary_conditions,
+        } = self
+        else {
             panic!("Node::if_add_child(): Tried to add an If child but parent isn't Node::If!");
         };
 
@@ -313,7 +323,11 @@ impl Node<'_> {
             match child {
                 Self::Chain { .. } => chains.push(child),
                 Self::If { .. } => secondary_conditions.push(child),
-                _ => return Err(String::from("if blocks can only have conditions, chains, and blocks as children"))
+                _ => {
+                    return Err(String::from(
+                        "if blocks can only have conditions, chains, and blocks as children",
+                    ));
+                }
             }
         }
 

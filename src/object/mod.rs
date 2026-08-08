@@ -147,7 +147,7 @@ pub enum Variable<'a> {
     Var { name: String, value: Object<'a> },
 
     /// This variant represents a `datatype`, which is stored on the stack like all other values.
-    Datatype { name: String, dt: DataType<'a>, },
+    Datatype { name: String, dt: DataType<'a> },
 
     /// This variant represents a switch between scopes and is used to determine what part of the
     /// stack to keep what what part to remove.

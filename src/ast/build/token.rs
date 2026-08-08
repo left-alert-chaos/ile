@@ -345,10 +345,13 @@ mod tests {
 
     #[test]
     fn proper_line() {
-        let token = tokenize("
+        let token = tokenize(
+            "
 
         15
-            ").unwrap();
+            ",
+        )
+        .unwrap();
         assert_eq!(token[0].line, 3);
     }
 
@@ -361,7 +364,13 @@ mod tests {
     #[test]
     fn path() {
         let tokens = token_types("obj.attr.attr").unwrap();
-        let expected = Vec::from([TokenType::Word(String::from("obj")), TokenType::PathSeparator, TokenType::Word(String::from("attr")), TokenType::PathSeparator, TokenType::Word(String::from("attr"))]);
+        let expected = Vec::from([
+            TokenType::Word(String::from("obj")),
+            TokenType::PathSeparator,
+            TokenType::Word(String::from("attr")),
+            TokenType::PathSeparator,
+            TokenType::Word(String::from("attr")),
+        ]);
         assert_eq!(tokens, expected);
     }
 

@@ -15,12 +15,9 @@ impl<'a> Node<'a> {
         for token in tokens.iter() {
             match token.ttype {
                 // handle opening a code
-                TokenType::OpenBrace => {
-                    
-                }
+                TokenType::OpenBrace => {}
                 // end the current node
-                TokenType::ChainEnd => {
-                }
+                TokenType::ChainEnd => {}
                 _ => {}
             }
         }
@@ -35,13 +32,17 @@ impl<'a> Node<'a> {
             return Err(Error::new_parsing(None, "unexpected EOF", fname.as_str()));
         };
         let TokenType::Word(word) = token.ttype.clone() else {
-            return Err(Error::new_parsing(Some(*token), "expected word", fname.as_str()));
+            return Err(Error::new_parsing(
+                Some(*token),
+                "expected word",
+                fname.as_str(),
+            ));
         };
 
         // determine node type from first token
         match word.as_str() {
             "let" => Self::parse_let(iterator, fname),
-            _ => Err(String::new())
+            _ => Err(String::new()),
         }
     }
 
@@ -49,17 +50,34 @@ impl<'a> Node<'a> {
         let word = Self::expect_word(iterator, fname.clone(), "expected variable name")?;
 
         // check if there's an equals sign
-        Self::expect_single_char(iterator, TokenType::Assignment, fname.clone(), format!("while parsing let statement"))?;
+        Self::expect_single_char(
+            iterator,
+            TokenType::Assignment,
+            fname.clone(),
+            format!("while parsing let statement"),
+        )?;
     }
 
     /// Return the `String` of the next token if it is a `Word`. Otherwise, create an error with
     /// specified message
-    fn expect_word(iterator: &mut Iter<Token>, fname: String, message: &str) -> Result<String, Error> {
+    fn expect_word(
+        iterator: &mut Iter<Token>,
+        fname: String,
+        message: &str,
+    ) -> Result<String, Error> {
         let Some(word) = iterator.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF (expected word token)", fname));
+            return Err(Error::new_parsing(
+                None,
+                "unexpected EOF (expected word token)",
+                fname,
+            ));
         };
         let TokenType::Word(word) = word.ttype.clone() else {
-            return Err(Error::new_parsing(Some(word.clone()), format!("{message} (Word token);\nfound {}", word.ttype), fname))
+            return Err(Error::new_parsing(
+                Some(word.clone()),
+                format!("{message} (Word token);\nfound {}", word.ttype),
+                fname,
+            ));
         };
 
         Ok(word)
@@ -67,14 +85,30 @@ impl<'a> Node<'a> {
 
     /// Return a `Result<(), Error>` about whether the specified token type is next. Most useful for
     /// asserting that a single-character token is next.
-    fn expect_single_char(iterator: &mut Iter<Token>, token_type: TokenType, fname: String, message: impl ToString) -> Result<(), Error> {
+    fn expect_single_char(
+        iterator: &mut Iter<Token>,
+        token_type: TokenType,
+        fname: String,
+        message: impl ToString,
+    ) -> Result<(), Error> {
         let message = message.to_string();
 
         let Some(token) = iterator.next() else {
-            return Err(Error::new_parsing(None, format!("unexpected EOF (expected {token_type} token)"), fname));
+            return Err(Error::new_parsing(
+                None,
+                format!("unexpected EOF (expected {token_type} token)"),
+                fname,
+            ));
         };
         if token.ttype != token_type {
-            Err(Error::new_parsing(Some(token.clone()), format!("expected {token_type} token {message};\nfound {}", token.ttype), fname))
+            Err(Error::new_parsing(
+                Some(token.clone()),
+                format!(
+                    "expected {token_type} token {message};\nfound {}",
+                    token.ttype
+                ),
+                fname,
+            ))
         } else {
             Ok(())
         }

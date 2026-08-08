@@ -45,20 +45,14 @@ impl<'a> ScopeStack<'a> {
             };
 
             if *name == vname {
-                *var = Variable::Var {
-                    name: vname,
-                    value,
-                };
+                *var = Variable::Var { name: vname, value };
 
                 return;
             }
         }
 
         // if we haven't already returned, create a new var
-        self.push(Variable::Var {
-            name: vname,
-            value,
-        });
+        self.push(Variable::Var { name: vname, value });
     }
 
     /// Push a variable onto the end of the current stack.
@@ -156,7 +150,7 @@ impl<'a> ScopeStack<'a> {
                 self.restore_scope(bin);
                 return Err(ScopeError::OutOfVars);
             };
-            
+
             match var {
                 Variable::StackDivider(Some(ScopeType::Function)) => return Ok(()),
                 _ => bin.push(var),
