@@ -150,6 +150,7 @@ impl fmt::Display for TokenType {
 }
 
 impl TokenType {
+    /// Determine if the token is logical operator
     pub fn is_operator(&self) -> bool {
         match self {
             Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo => {
@@ -157,6 +158,30 @@ impl TokenType {
             }
             _ => false,
         }
+    }
+
+    /// Determine if two tokens have the same TokenType (ignoring inner values)
+    pub fn same_as(&self, other: &TokenType) -> bool {
+        // remove inner values
+        let self_ref = match self {
+            Self::String(_) => &Self::String(String::new()),
+            Self::Integer(_) => &Self::Integer(0),
+            Self::Float(_) => &Self::Float(0.0),
+            Self::Boolean(_) => &Self::Boolean(false),
+            Self::Word(_) => &Self::Word(String::new()),
+            _ => self
+        };
+
+        let other_ref = match other {
+            Self::String(_) => &Self::String(String::new()),
+            Self::Integer(_) => &Self::Integer(0),
+            Self::Float(_) => &Self::Float(0.0),
+            Self::Boolean(_) => &Self::Boolean(false),
+            Self::Word(_) => &Self::Word(String::new()),
+            _ => other
+        };
+
+        self_ref == other_ref
     }
 
     fn from(mut value: String) -> Result<Self, String> {
