@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{DataType, Executable, FunctionSignature, Object, Variable};
+use crate::{DataType, Executable, FunctionSignature, Object, Variable, TokenType};
 
 /// # Path
 /// This is an alias for `Vec<String>` and used to represent a path to an object.
@@ -27,6 +27,9 @@ pub enum Node<'a> {
         path: Path,
     },
 
+    /// Represents a logic operator (addition, subtraction, comparisons, etc)
+    Operator(TokenType),
+
     /// Represents functions
     CodeBlock {
         chains: Children<'a>, // children should be Chain
@@ -39,7 +42,7 @@ pub enum Node<'a> {
 
     /// Represents assigning a value to a named variable.
     Assignment {
-        name: String,
+        path: Path,
         value: Box<Self>, // child should be Chain
 
         /// Represents whether this is a `let` statement (creating a variable) or a reassignment
@@ -111,6 +114,7 @@ impl Node<'_> {
         }
     }
 
+    /*
     /// Add a child to a node
     pub fn add_child(&mut self, child: Self) -> Result<(), String> {
         match self {
@@ -183,14 +187,14 @@ impl Node<'_> {
 
     /// Set value of `Assignment`
     fn assignment_add_child(&mut self, child: Self) -> Result<(), String> {
-        let Self::Assignment { name, create, .. } = self else {
+        let Self::Assignment { path, create, .. } = self else {
             panic!(
                 "Node::assignment_add_child(): Tried to set value but parent isn't Node::Assignment!"
             );
         };
 
         *self = Self::Assignment {
-            name: name.clone(),
+            path: path.clone(),
             value: Box::new(child), // put the child in a box, haha funny
             create: create.clone(),
         };
@@ -206,7 +210,7 @@ impl Node<'_> {
             );
         };
 
-        let Self::Assignment { name, value, .. } = child else {
+        let Self::Assignment { path, value, .. } = child else {
             return Err(String::from(
                 "only assignments are allowed in datatype definitions",
             ));
@@ -217,7 +221,7 @@ impl Node<'_> {
             Node::CodeBlock { .. } => {
                 // create a Function out of the CodeBlock
                 let func = Object::Function(Executable::CodeBlock(value));
-                data_type.methods.insert(name, func);
+                data_type.methods.insert(path, func);
             }
             Node::Literal(obj) => {
                 let _ = data_type.attributes.insert(name, obj);
@@ -339,4 +343,5 @@ impl Node<'_> {
 
         Ok(())
     }
+    */
 }

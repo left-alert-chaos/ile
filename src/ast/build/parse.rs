@@ -33,7 +33,7 @@ impl<'a> Node<'a> {
         };
         let TokenType::Word(word) = token.ttype.clone() else {
             return Err(Error::new_parsing(
-                Some(*token),
+                Some(token.clone()),
                 "expected word",
                 fname.as_str(),
             ));
@@ -42,20 +42,114 @@ impl<'a> Node<'a> {
         // determine node type from first token
         match word.as_str() {
             "let" => Self::parse_let(iterator, fname),
-            _ => Err(String::new()),
+            _ => Self::parse_misc(iterator, word, fname),
         }
     }
 
     fn parse_let(iterator: &mut Iter<Token>, fname: String) -> Result<Node<'a>, Error> {
-        let word = Self::expect_word(iterator, fname.clone(), "expected variable name")?;
+        let name = Self::expect_word(iterator, fname.clone(), "expected variable name")?;
 
         // check if there's an equals sign
         Self::expect_single_char(
             iterator,
             TokenType::Assignment,
             fname.clone(),
-            format!("while parsing let statement"),
+            "while parsing let statement",
         )?;
+
+        let value = Self::parse_individual_node(iterator, fname.clone())?;
+
+        // check for semicolon
+        Self::expect_single_char(
+            iterator,
+            TokenType::ChainEnd,
+            fname,
+            "while parsing let statement",
+        )?;
+
+        Ok(
+            Node::Assignment {
+                path: Vec::from([name]),
+                value: Box::new(value),
+                create: true
+            }
+        )
+    }
+
+    fn parse_assignment(iterator: &mut Iter<Token>, path: Vec<String>, fname: String) -> Result<Node<'a>, Error> {
+        let value = Self::parse_individual_node(iterator, fname.clone())?;
+        Self::expect_single_char(
+            iterator,
+            TokenType::ChainEnd,
+            fname,
+            "while parsing assignment",
+        )?;
+        
+        Ok(
+            Node::Assignment {
+                path,
+                value: Box::new(value),
+                create: true,
+            }
+        )
+    }
+
+    // TODO: Here, parse a function signature, which is either words in parens or expressions in
+    // parens
+    fn parse_call(iterator: &mut Iter<Token>, fname: String) -> Result<Node<'a>, Error> {
+        let mut children = Vec::new();
+
+        loop {
+            children.push(Self::parse_individual_node(iterator, fname.clone())?);
+
+            // check next token
+            let Some(next) = iterator.clone().next() else {
+                return Err(Error::new_parsing(None, "unexpected EOF while parsing function call", fname));
+            };
+
+            match next.ttype {
+            }
+        }
+    }
+
+    /// Parse a non-keyword
+    fn parse_misc(iterator: &mut Iter<Token>, word: String, fname: String) -> Result<Node<'a>, Error> {
+        let Some(next) = iterator.next() else {
+            return Err(Error::new_parsing(
+                None,
+                "unexpected EOF while parsing statement",
+                fname.clone()
+            ));
+        };
+
+        // non-keywords are always paths to something else, so read the path
+        let mut path = Vec::from([word]);
+        let mut chain = Vec::new();
+        while let Some(token) = iterator.next() {
+            match token.ttype.clone() {
+                TokenType::PathSeparator => {},
+                TokenType::Word(w) => path.push(w),
+                TokenType::OpenParen => chain.push(Self::parse_call(iterator, fname.clone())?),
+                TokenType::Assignment => return Self::parse_assignment(iterator, path, fname.clone()),
+                TokenType::ChainEnd => break,
+                // push an operator or raise an error
+                _ => {
+                    if token.ttype.is_operator() {
+                        chain.push(Node::Variable(path.clone()));
+                        path.clear(); //paving the way lol
+                        chain.push(Node::Operator(token.ttype.clone()));
+                    } else {
+                        return Err(
+                            Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), fname)
+                        )
+                    }
+                }
+            }
+        }
+
+        Ok(
+            Node::Chain(chain)
+        )
     }
 
     /// Return the `String` of the next token if it is a `Word`. Otherwise, create an error with
@@ -96,7 +190,7 @@ impl<'a> Node<'a> {
         let Some(token) = iterator.next() else {
             return Err(Error::new_parsing(
                 None,
-                format!("unexpected EOF (expected {token_type} token)"),
+                format!("unexpected EOF (expected {token_type} token) {message}"),
                 fname,
             ));
         };
