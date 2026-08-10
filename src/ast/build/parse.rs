@@ -2,13 +2,14 @@
 //! This module holds code to convert a list of `Token`s into a walkable Abstract Syntax Tree. It's
 //! mostly in an `impl` block for `Node`.
 
-use crate::{DataType, FunctionSignature, Node, Token, TokenType, error::Error};
+use crate::{DataType, FunctionSignature, Node, Token, TokenType, error::Error, Object};
 use core::slice::Iter;
 
 /// # Parser
 pub struct Parser {
     index: usize,
     tokens: Vec<Token>,
+    started: bool,
 }
 
 impl<'a> Parser {
@@ -21,13 +22,15 @@ impl<'a> Parser {
         let mut parser = Self {
             tokens,
             index: 0,
+            started: false,
         };
 
         while let Some(_) = parser.current() {
-            eprintln!("Adding child to root");
-            root.root_add_child(parser.parse_individual_node(fname.clone())?);
+            let child = parser.parse_individual_node(fname.clone())?;
+            eprintln!("Parser::build_root(): child is {child:#?}");
+            root.root_add_child(child);
+            eprintln!("successfully added child to root");
         }
-        eprintln!("Done parsing children of root");
 
         Ok(root)
     }
@@ -38,6 +41,12 @@ impl<'a> Parser {
         let Some(token) = self.next() else {
             return Err(Error::new_parsing(None, "unexpected EOF", fname.as_str()));
         };
+
+        // literals
+        if let Ok(obj) = Object::from_token(token.clone()) {
+            return Ok(Node::Literal(obj));
+        }
+
         let TokenType::Word(word) = token.ttype.clone() else {
             return Err(Error::new_parsing(
                 Some(token.clone()),
@@ -49,7 +58,9 @@ impl<'a> Parser {
         // determine node type from first token
         match word.as_str() {
             "let" => self.parse_let(fname),
-            _ => self.parse_misc(word, fname),
+            _ => {
+                self.parse_misc(word, fname)
+            }
         }
     }
 
@@ -105,13 +116,18 @@ impl<'a> Parser {
             children.push(self.parse_individual_node(fname.clone())?);
 
             // check previous token to determine if the parens ended or its a comma
-            let Some(prev) = self.peek_prev() else {
+            let Some(next) = self.peek_next() else {
                 return Err(Error::new_parsing(None, "unexpected EOF while parsing function call", fname));
             };
 
-            if prev.ttype == TokenType::CloseParen {
+            if next.ttype == TokenType::CloseParen {
                 break;
             }
+        }
+
+        // if next char is semicolon, consume
+        if let Some(token) = self.peek_next() && token.ttype == TokenType::ChainEnd {
+            self.index += 1;
         }
 
         Ok(
@@ -124,14 +140,6 @@ impl<'a> Parser {
 
     /// Parse a non-keyword
     fn parse_misc(&mut self, word: String, fname: String) -> Result<Node<'a>, Error> {
-        let Some(next) = self.next() else {
-            return Err(Error::new_parsing(
-                None,
-                "unexpected EOF while parsing statement",
-                fname.clone()
-            ));
-        };
-
         // non-keywords are always paths to something else, so read the path
         let mut path = Vec::from([word]);
         let mut chain = Vec::new();
@@ -141,7 +149,7 @@ impl<'a> Parser {
                 TokenType::Word(w) => path.push(w),
                 TokenType::OpenParen => chain.push(self.parse_call(fname.clone(), path.clone())?),
                 TokenType::Assignment => return self.parse_assignment(path, fname.clone()),
-                TokenType::ChainEnd => break,
+                TokenType::ChainEnd | TokenType::Comma | TokenType::CloseParen => break,
                 // push an operator or raise an error
                 _ => {
                     if token.ttype.is_operator() {
@@ -219,6 +227,17 @@ impl<'a> Parser {
     }
 
     fn next(&mut self) -> Option<Token> {
+        // so that the 0-index token is used
+        if !self.started {
+            self.started = true;
+
+            if self.tokens.len() > 0 {
+                return Some(self.tokens[0].clone());
+            } else {
+                return None;
+            }
+        }
+
         self.index += 1;
         if self.index < self.tokens.len() {
             Some(self.tokens[self.index].clone())
@@ -228,6 +247,15 @@ impl<'a> Parser {
     }
 
     fn peek_next(&self) -> Option<Token> {
+        // make sure to use the 0-index token
+        if !self.started {
+            if self.tokens.len() > 0 {
+                return Some(self.tokens[0].clone());
+            } else {
+                return None;
+            }
+        }
+
         let index = self.index + 1;
         if self.index < self.tokens.len() {
             Some(self.tokens[index].clone())
@@ -246,12 +274,9 @@ impl<'a> Parser {
     }
 
     fn current(&self) -> Option<Token> {
-        eprintln!("Called Parser::current");
         if self.index < self.tokens.len() {
-            eprintln!("Parser::current: returning Some(_)");
             Some(self.tokens[self.index].clone())
         } else {
-            eprintln!("Parser::current: returning None");
             None
         }
     }
