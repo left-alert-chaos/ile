@@ -33,6 +33,8 @@ pub mod builtins;
 pub use builtins::*;
 use std::collections::HashMap;
 
+use crate::*;
+
 /// # Object
 /// An object is anything that Ile code can see. It can be of four classifications: Data, Function,
 /// primitive, or Method. See the module's docstring for more explanation.
@@ -135,6 +137,17 @@ impl<'a> Object<'a> {
             || self.data().is_some() && other.data().is_some()
             || self.boolean().is_some() && other.boolean().is_some()
             || self.string().is_some() && other.string().is_some()
+    }
+
+    /// Attempt to create a primitive `Object` from a `Token`
+    pub fn from_token(token: Token) -> Result<Self, String> {
+        match token.ttype {
+            TokenType::String(s) => Ok(Self::String(s)),
+            TokenType::Integer(i) => Ok(Self::Integer(i)),
+            TokenType::Float(f) => Ok(Self::Float(f)),
+            TokenType::Boolean(b) => Ok(Self::Boolean(b)),
+            _ => Err(format!("only String, Integer, Float, and Boolean tokens can become objects, not {:?}", token.ttype)),
+        }
     }
 }
 
