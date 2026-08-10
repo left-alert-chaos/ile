@@ -47,27 +47,25 @@ impl<'a> Parser {
 
         // determine node type from first token
         match word.as_str() {
-            "let" => Self::parse_let(self, fname),
-            _ => Self::parse_misc(self, word, fname),
+            "let" => self.parse_let(fname),
+            _ => self.parse_misc(word, fname),
         }
     }
 
     fn parse_let(&mut self, fname: String) -> Result<Node<'a>, Error> {
-        let name = Self::expect_word(self, fname.clone(), "expected variable name")?;
+        let name = self.expect_word(fname.clone(), "expected variable name")?;
 
         // check if there's an equals sign
-        Self::expect_single_char(
-            self,
+        self.expect_single_char(
             TokenType::Assignment,
             fname.clone(),
             "while parsing let statement",
         )?;
 
-        let value = Self::parse_individual_node(self, fname.clone())?;
+        let value = self.parse_individual_node(fname.clone())?;
 
         // check for semicolon
-        Self::expect_single_char(
-            self,
+        self.expect_single_char(
             TokenType::ChainEnd,
             fname,
             "while parsing let statement",
@@ -83,9 +81,8 @@ impl<'a> Parser {
     }
 
     fn parse_assignment(&mut self, path: Vec<String>, fname: String) -> Result<Node<'a>, Error> {
-        let value = Self::parse_individual_node(self, fname.clone())?;
-        Self::expect_single_char(
-            self,
+        let value = self.parse_individual_node(fname.clone())?;
+        self.expect_single_char(
             TokenType::ChainEnd,
             fname,
             "while parsing assignment",
@@ -106,7 +103,7 @@ impl<'a> Parser {
         let mut children = Vec::new();
 
         loop {
-            children.push(Self::parse_individual_node(self, fname.clone())?);
+            children.push(self.parse_individual_node(fname.clone())?);
 
             // check next token
             let Some(next) = self.peek_next() else {
@@ -136,8 +133,8 @@ impl<'a> Parser {
             match token.ttype.clone() {
                 TokenType::PathSeparator => {},
                 TokenType::Word(w) => path.push(w),
-                TokenType::OpenParen => chain.push(Self::parse_call(self, fname.clone())?),
-                TokenType::Assignment => return Self::parse_assignment(self, path, fname.clone()),
+                TokenType::OpenParen => chain.push(self.parse_call(fname.clone())?),
+                TokenType::Assignment => return self.parse_assignment(path, fname.clone()),
                 TokenType::ChainEnd => break,
                 // push an operator or raise an error
                 _ => {
