@@ -4,9 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{DataType, Executable, FunctionSignature, Object, Variable, TokenType};
-
-use std::fmt;
+use crate::{DataType, FunctionSignature, Object, Variable, TokenType};
 
 /// # Path
 /// This is an alias for `Vec<String>` and used to represent a path to an object.
@@ -57,19 +55,19 @@ pub enum Node<'a> {
     /// Represents a `while` loop.
     While {
         condition: Option<Box<Self>>, // should be Chain
-        chains: Children<'a>,         // should also be Chain
+        block: Box<Self>, // should be a CodeBlock
     },
 
     /// Represents a `for` loop.
     For {
         condition: Option<Box<Self>>, // should be anything executable
-        chains: Children<'a>,
+        block: Box<Self>, // should be a CodeBlock
     },
 
     /// Represents an `if` block.
     If {
         condition: Option<Box<Self>>, // should be Chain
-        chains: Children<'a>,
+        block: Box<Self>, // should be a codeblock
         secondary_conditions: Children<'a>, // should be If
     },
 

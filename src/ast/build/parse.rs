@@ -3,7 +3,6 @@
 //! mostly in an `impl` block for `Node`.
 
 use crate::{DataType, FunctionSignature, Node, Token, TokenType, error::Error, Object};
-use core::slice::Iter;
 
 /// # Parser
 pub struct Parser {
