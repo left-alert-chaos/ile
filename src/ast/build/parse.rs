@@ -41,6 +41,12 @@ impl<'a> Parser {
             return Err(Error::new_parsing(None, "unexpected EOF", self.fname.as_str()));
         };
 
+        match token.ttype {
+            TokenType::OpenParen => return self.parse_function(),
+            TokenType::OpenBrace => return self.parse_block(),
+            _ => {}
+        }
+
         // literals
         if let Ok(obj) = Object::from_token(token.clone()) {
             if let Some(next) = self.peek_next() && next.ttype.is_operator() {
@@ -51,10 +57,7 @@ impl<'a> Parser {
             }
         }
 
-        if token.ttype == TokenType::OpenBrace {
-            return self.parse_block();
-        }
-
+        // if the things before this didn't work, this can only be a word
         let TokenType::Word(word) = token.ttype.clone() else {
             return Err(Error::new_parsing(
                 Some(token.clone()),
@@ -70,6 +73,32 @@ impl<'a> Parser {
             _ => {
                 self.parse_misc(Some(word))
             }
+        }
+    }
+
+    // called after unexpected open paren that isn't after a path
+    fn parse_function(&mut self) -> Result<Node<'a>, Error> {
+        // parse the signature
+        let mut signature = Vec::new();
+        while let Some(token) = self.next() {
+            match token.ttype {
+                TokenType::Word(w) => signature.push(w),
+                TokenType::Comma => {}
+                TokenType::CloseParen => break,
+                _ => return Err(Error::new_parsing(Some(token.clone()), format!("unexpected {} token while parsing function signature; expected Comma, CloseParen, or Word", token.ttype), self.fname.clone())),
+            }
+        }
+
+        // parse block
+        self.expect_single_char(TokenType::OpenBrace, "while parsing function definition")?;
+        match self.parse_block() {
+            Ok(Node::CodeBlock { chains, .. }) => {
+                Ok(
+                    Node::CodeBlock { chains, signature }
+                )
+            }
+            Err(e) => Err(e),
+            _ => unreachable!(),
         }
     }
 

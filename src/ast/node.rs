@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{DataType, FunctionSignature, Object, Variable, TokenType};
+use crate::{DataType, Object, Variable, TokenType};
 
 /// # Path
 /// This is an alias for `Vec<String>` and used to represent a path to an object.
@@ -33,7 +33,7 @@ pub enum Node<'a> {
     /// Represents functions
     CodeBlock {
         chains: Children<'a>, // children should be Chain
-        signature: FunctionSignature<'a>,
+        signature: Vec<String>,
     },
 
     /// Represents a statement. It holds a `Vec` of `Node::Call`, `Node::Variable`, or
