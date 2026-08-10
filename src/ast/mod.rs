@@ -26,5 +26,5 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, String> {
 
     let tokens = tokenize(text)?;
 
-    Ok(Node::build_root(tokens, path)?)
+    Ok(Parser::build_root(tokens, path)?)
 }

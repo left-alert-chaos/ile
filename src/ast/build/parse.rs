@@ -5,12 +5,18 @@
 use crate::{DataType, FunctionSignature, Node, Token, TokenType, error::Error};
 use core::slice::Iter;
 
-impl<'a> Node<'a> {
+/// # Parser
+pub struct Parser {
+    index: usize,
+    tokens: Vec<Token>,
+}
+
+impl<'a> Parser {
     /// Parse a `Vec<Token>` into a `Node::Root`. This is the main representation of an AST.
     /// Nesting happens by storing a parent and child node. The parser creates a child node and
     /// calls the parent's `add_child()` method to appropriately store the new node.
-    pub fn build_root(tokens: Vec<Token>, fname: String) -> Result<Self, Error> {
-        let mut root = Self::new_root(fname.clone());
+    pub fn build_root(tokens: Vec<Token>, fname: String) -> Result<Node<'a>, Error> {
+        let mut root = Node::new_root(fname.clone());
 
         for token in tokens.iter() {
             match token.ttype {
@@ -26,9 +32,9 @@ impl<'a> Node<'a> {
     }
 
     // Responsible for creating a node and recursing to create children
-    fn parse_individual_node(iterator: &mut Iter<Token>, fname: String) -> Result<Node<'a>, Error> {
+    fn parse_individual_node(&mut self, fname: String) -> Result<Node<'a>, Error> {
         //Extract first token's info
-        let Some(token) = iterator.next() else {
+        let Some(token) = self.next() else {
             return Err(Error::new_parsing(None, "unexpected EOF", fname.as_str()));
         };
         let TokenType::Word(word) = token.ttype.clone() else {
@@ -41,27 +47,27 @@ impl<'a> Node<'a> {
 
         // determine node type from first token
         match word.as_str() {
-            "let" => Self::parse_let(iterator, fname),
-            _ => Self::parse_misc(iterator, word, fname),
+            "let" => Self::parse_let(self, fname),
+            _ => Self::parse_misc(self, word, fname),
         }
     }
 
-    fn parse_let(iterator: &mut Iter<Token>, fname: String) -> Result<Node<'a>, Error> {
-        let name = Self::expect_word(iterator, fname.clone(), "expected variable name")?;
+    fn parse_let(&mut self, fname: String) -> Result<Node<'a>, Error> {
+        let name = Self::expect_word(self, fname.clone(), "expected variable name")?;
 
         // check if there's an equals sign
         Self::expect_single_char(
-            iterator,
+            self,
             TokenType::Assignment,
             fname.clone(),
             "while parsing let statement",
         )?;
 
-        let value = Self::parse_individual_node(iterator, fname.clone())?;
+        let value = Self::parse_individual_node(self, fname.clone())?;
 
         // check for semicolon
         Self::expect_single_char(
-            iterator,
+            self,
             TokenType::ChainEnd,
             fname,
             "while parsing let statement",
@@ -76,10 +82,10 @@ impl<'a> Node<'a> {
         )
     }
 
-    fn parse_assignment(iterator: &mut Iter<Token>, path: Vec<String>, fname: String) -> Result<Node<'a>, Error> {
-        let value = Self::parse_individual_node(iterator, fname.clone())?;
+    fn parse_assignment(&mut self, path: Vec<String>, fname: String) -> Result<Node<'a>, Error> {
+        let value = Self::parse_individual_node(self, fname.clone())?;
         Self::expect_single_char(
-            iterator,
+            self,
             TokenType::ChainEnd,
             fname,
             "while parsing assignment",
@@ -96,25 +102,26 @@ impl<'a> Node<'a> {
 
     // TODO: Here, parse a function signature, which is either words in parens or expressions in
     // parens
-    fn parse_call(iterator: &mut Iter<Token>, fname: String) -> Result<Node<'a>, Error> {
+    fn parse_call(&mut self, fname: String) -> Result<Node<'a>, Error> {
         let mut children = Vec::new();
 
         loop {
-            children.push(Self::parse_individual_node(iterator, fname.clone())?);
+            children.push(Self::parse_individual_node(self, fname.clone())?);
 
             // check next token
-            let Some(next) = iterator.clone().next() else {
+            let Some(next) = self.peek_next() else {
                 return Err(Error::new_parsing(None, "unexpected EOF while parsing function call", fname));
             };
 
             match next.ttype {
+                _ => todo!()
             }
         }
     }
 
     /// Parse a non-keyword
-    fn parse_misc(iterator: &mut Iter<Token>, word: String, fname: String) -> Result<Node<'a>, Error> {
-        let Some(next) = iterator.next() else {
+    fn parse_misc(&mut self, word: String, fname: String) -> Result<Node<'a>, Error> {
+        let Some(next) = self.next() else {
             return Err(Error::new_parsing(
                 None,
                 "unexpected EOF while parsing statement",
@@ -125,12 +132,12 @@ impl<'a> Node<'a> {
         // non-keywords are always paths to something else, so read the path
         let mut path = Vec::from([word]);
         let mut chain = Vec::new();
-        while let Some(token) = iterator.next() {
+        while let Some(token) = self.next() {
             match token.ttype.clone() {
                 TokenType::PathSeparator => {},
                 TokenType::Word(w) => path.push(w),
-                TokenType::OpenParen => chain.push(Self::parse_call(iterator, fname.clone())?),
-                TokenType::Assignment => return Self::parse_assignment(iterator, path, fname.clone()),
+                TokenType::OpenParen => chain.push(Self::parse_call(self, fname.clone())?),
+                TokenType::Assignment => return Self::parse_assignment(self, path, fname.clone()),
                 TokenType::ChainEnd => break,
                 // push an operator or raise an error
                 _ => {
@@ -155,11 +162,11 @@ impl<'a> Node<'a> {
     /// Return the `String` of the next token if it is a `Word`. Otherwise, create an error with
     /// specified message
     fn expect_word(
-        iterator: &mut Iter<Token>,
+        &mut self,
         fname: String,
         message: &str,
     ) -> Result<String, Error> {
-        let Some(word) = iterator.next() else {
+        let Some(word) = self.next() else {
             return Err(Error::new_parsing(
                 None,
                 "unexpected EOF (expected word token)",
@@ -180,14 +187,14 @@ impl<'a> Node<'a> {
     /// Return a `Result<(), Error>` about whether the specified token type is next. Most useful for
     /// asserting that a single-character token is next.
     fn expect_single_char(
-        iterator: &mut Iter<Token>,
+        &mut self,
         token_type: TokenType,
         fname: String,
         message: impl ToString,
     ) -> Result<(), Error> {
         let message = message.to_string();
 
-        let Some(token) = iterator.next() else {
+        let Some(token) = self.next() else {
             return Err(Error::new_parsing(
                 None,
                 format!("unexpected EOF (expected {token_type} token) {message}"),
@@ -205,6 +212,33 @@ impl<'a> Node<'a> {
             ))
         } else {
             Ok(())
+        }
+    }
+
+    fn next(&mut self) -> Option<Token> {
+        self.index += 1;
+        if self.index < self.tokens.len() {
+            Some(self.tokens[self.index].clone())
+        } else {
+            None
+        }
+    }
+
+    fn peek_next(&self) -> Option<Token> {
+        let index = self.index + 1;
+        if self.index < self.tokens.len() {
+            Some(self.tokens[self.index].clone())
+        } else {
+            None
+        }
+    }
+
+    fn peek_prev(&self) -> Option<Token> {
+        let index = self.index - 1;
+        if index > 0 && index < self.tokens.len() {
+            Some(self.tokens[self.index].clone())
+        } else {
+            None
         }
     }
 }
