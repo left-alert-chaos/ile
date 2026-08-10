@@ -6,6 +6,8 @@
 use super::scope::ScopeStack;
 use crate::{DataType, Object, Variable, TokenType};
 
+use std::collections::HashMap;
+
 /// # Path
 /// This is an alias for `Vec<String>` and used to represent a path to an object.
 type Path = Vec<String>;
@@ -50,7 +52,13 @@ pub enum Node<'a> {
     },
 
     /// Represents a `DataType` definition.
-    DataType(DataType<'a>),
+    /// The read `DataType` type isn't used here because attributes can come from functions, which
+    /// are only usable at runtime
+    DataType {
+        name: String,
+        methods: HashMap<String, Self>,
+        attributes: HashMap<String, Self>,
+    },
 
     /// Represents a `while` loop.
     While {

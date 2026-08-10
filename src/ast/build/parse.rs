@@ -4,6 +4,11 @@
 
 use crate::{DataType, FunctionSignature, Node, Token, TokenType, error::Error, Object};
 
+use std::{
+    collections::HashMap,
+    ops::Deref,
+};
+
 /// # Parser
 pub struct Parser {
     index: usize,
@@ -72,6 +77,7 @@ impl<'a> Parser {
             "if" => self.parse_if(),
             "for" => self.parse_for(),
             "while" => self.parse_while(),
+            "datatype" => self.parse_datatype(),
             _ => {
                 self.parse_misc(Some(word))
             }
@@ -178,6 +184,55 @@ impl<'a> Parser {
                 signature: Vec::new(),
             }
         )
+    }
+
+    // parse let statements inside a `datatype` block
+    fn parse_datatype(&mut self) -> Result<Node<'a>, Error> {
+        let mut methods = HashMap::new();
+        let mut attributes = HashMap::new();
+
+        // get name
+        let Some(next) = self.next() else {
+            return Err(Error::new_parsing(None, "unexpected EOF while parsing datatype", self.fname.clone()));
+        };
+        let TokenType::Word(name) = next.ttype else {
+            return Err(Error::new_parsing(Some(next.clone()), format!("expected Word while parsing datatype name;\nfound {}", next.ttype), self.fname.clone()))
+        };
+
+        self.expect_single_char(TokenType::OpenBrace, "while parsing datatype definition")?;
+
+        // read all let statements
+        while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBrace {
+            println!("peeked token is {token:?}");
+            let assignment = self.parse_individual_node()?;
+
+            let Node::Assignment { path, value, create } = assignment else {
+                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions", self.fname.clone()))
+            };
+
+            if !create {
+                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions. Help: add let", self.fname.clone()))
+            }
+
+            if path.len() != 1 {
+                return Err(Error::new_parsing(Some(self.current().unwrap()), "only local assignments are allowed inside datatype definitions", self.fname.clone()));
+            }
+
+            // determine where to put value
+            match *value {
+                Node::CodeBlock { .. } => {
+                    methods.insert(path[0].clone(), *value);
+                }
+                Node::Literal(_) | Node::Call { .. } => {
+                    attributes.insert(path[0].clone(), *value);
+                }
+                _ => return Err(Error::new_parsing(Some(self.current().unwrap()), "only functions, calls, and literals can be assigned inside datatype definitions", self.fname.clone())),
+            }
+        }
+
+        self.expect_single_char(TokenType::CloseBrace, "while parsing end of datatype definition")?;
+
+        Ok(Node::DataType { name, methods, attributes })
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {

@@ -104,9 +104,6 @@ pub enum TokenType {
     /// A token for booleans
     Boolean(bool),
 
-    /// A token for the `datatype` keyword
-    Datatype,
-
     /// A token for anything that doesn't fit into any other bucket; it's usually object and type
     /// names.
     Word(String),
@@ -141,7 +138,6 @@ impl fmt::Display for TokenType {
             Self::Integer(i) => format!("Integer {i}"),
             Self::Float(f) => format!("Float {f}"),
             Self::Boolean(b) => format!("Boolean {b}"),
-            Self::Datatype => "Datatype".to_string(),
             Self::Word(w) => format!("Word '{w}'"),
         };
 
@@ -219,7 +215,6 @@ impl TokenType {
             "!=" => return Ok(Self::NotEqualTo),
             "false" => return Ok(Self::Boolean(false)),
             "true" => return Ok(Self::Boolean(true)),
-            "datatype" => return Ok(Self::Datatype),
             _ => {}
         }
 
