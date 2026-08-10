@@ -113,6 +113,11 @@ impl<'a> Parser {
         let mut children = Vec::new();
 
         loop {
+            // support empty calls
+            if let Some(next) = self.peek_next() && next.ttype == TokenType::CloseParen {
+                break
+            }
+
             children.push(self.parse_individual_node(fname.clone())?);
 
             // check previous token to determine if the parens ended or its a comma
