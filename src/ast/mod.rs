@@ -44,9 +44,6 @@ mod tests {
     #[test]
     fn parse_hello_world_wip() {
         let hello_world = "println(\"Hello, world!\");";
-
-        let ast = ast_from_str(hello_world).unwrap();
-        println!("{ast:#?}");
-        panic!();
+        ast_from_str(hello_world).unwrap();
     }
 }
