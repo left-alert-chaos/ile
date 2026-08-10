@@ -25,11 +25,9 @@ impl<'a> Parser {
             started: false,
         };
 
-        while let Some(_) = parser.current() {
+        while let Some(_) = parser.peek_next() {
             let child = parser.parse_individual_node(fname.clone())?;
-            eprintln!("Parser::build_root(): child is {child:#?}");
             root.root_add_child(child);
-            eprintln!("successfully added child to root");
         }
 
         Ok(root)
@@ -104,7 +102,7 @@ impl<'a> Parser {
             Node::Assignment {
                 path,
                 value: Box::new(value),
-                create: true,
+                create: false,
             }
         )
     }
@@ -115,17 +113,14 @@ impl<'a> Parser {
         loop {
             // support empty calls
             if let Some(next) = self.peek_next() && next.ttype == TokenType::CloseParen {
+                self.index += 1;
                 break
             }
 
             children.push(self.parse_individual_node(fname.clone())?);
 
-            // check previous token to determine if the parens ended or its a comma
-            let Some(next) = self.peek_next() else {
-                return Err(Error::new_parsing(None, "unexpected EOF while parsing function call", fname));
-            };
-
-            if next.ttype == TokenType::CloseParen {
+            // check next token to determine if the parens ended or its a comma
+            if let Some(next) = self.peek_next() && next.ttype == TokenType::CloseParen {
                 self.index += 1;
                 break;
             }
@@ -153,9 +148,22 @@ impl<'a> Parser {
             match token.ttype.clone() {
                 TokenType::PathSeparator => {},
                 TokenType::Word(w) => path.push(w),
-                TokenType::OpenParen => chain.push(self.parse_call(fname.clone(), path.clone())?),
+                TokenType::OpenParen => {
+                    chain.push(self.parse_call(fname.clone(), path.clone())?);
+                    
+                    // if the call consumed a semicolon, break
+                    if let Some(current) = self.current() && current.ttype == TokenType::ChainEnd {
+                        break;
+                    }
+
+                    path.clear();
+                }
                 TokenType::Assignment => return self.parse_assignment(path, fname.clone()),
-                TokenType::ChainEnd | TokenType::Comma | TokenType::CloseParen => break,
+                TokenType::ChainEnd | TokenType::Comma => break,
+                TokenType::CloseParen => {
+                    self.index -= 1;
+                    break;
+                }
                 // push an operator or raise an error
                 _ => {
                     if token.ttype.is_operator() {
@@ -263,7 +271,7 @@ impl<'a> Parser {
         }
 
         let index = self.index + 1;
-        if self.index < self.tokens.len() {
+        if index < self.tokens.len() {
             Some(self.tokens[index].clone())
         } else {
             None

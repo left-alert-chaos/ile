@@ -41,9 +41,33 @@ pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, String> {
 mod tests {
     use super::*;
 
+    fn test_build(code: &str) {
+        ast_from_str(code).unwrap();
+    }
+
     #[test]
     fn parse_hello_world_wip() {
         let hello_world = "println(\"Hello, world!\");";
-        ast_from_str(hello_world).unwrap();
+        test_build(hello_world);
+    }
+
+    #[test]
+    fn parse_nested_functions_wip() {
+        let code = "func(func());";
+        test_build(code);
+    }
+
+    #[test]
+    fn parse_let_wip() {
+        let code = "let x = 5;";
+        test_build(code);
+    }
+
+    #[test]
+    fn parse_let_and_call() {
+        let code = "func();
+        let x = 5;
+        func2();";
+        test_build(code);    
     }
 }
