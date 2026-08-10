@@ -96,4 +96,12 @@ mod tests {
         }";
         test_build(code);
     }
+
+    #[test]
+    fn parse_while() {
+        let code = "while let x = do_another_thing(); {
+            abcd();
+        }";
+        test_build(code);
+    }
 }

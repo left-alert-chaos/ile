@@ -71,6 +71,7 @@ impl<'a> Parser {
             "let" => self.parse_let(),
             "if" => self.parse_if(),
             "for" => self.parse_for(),
+            "while" => self.parse_while(),
             _ => {
                 self.parse_misc(Some(word))
             }
@@ -136,6 +137,21 @@ impl<'a> Parser {
 
         Ok(
             Node::For {
+                condition: Box::new(condition),
+                block: Box::new(block),
+            }
+        )
+    }
+
+    // parse a while loop
+    // This logic is again similar to the logic for `for` and `if`
+    fn parse_while(&mut self) -> Result<Node<'a>, Error> {
+        let condition = self.parse_individual_node()?;
+        self.expect_single_char(TokenType::OpenBrace, "to open block while parsing while loop")?;
+        let block = self.parse_block()?;
+
+        Ok(
+            Node::While {
                 condition: Box::new(condition),
                 block: Box::new(block),
             }
