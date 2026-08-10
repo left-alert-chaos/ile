@@ -32,15 +32,17 @@ impl fmt::Debug for Error {
 impl<'a> Error {
     /// Create an `Error` in the parsing pipeline stage with the given message and token
     pub fn new_parsing(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
+        let mut message = message.to_string();
         let line;
         if let Some(token) = token {
             line = Some(token.line);
+            message.push_str(format!("\nat token {}", token.ttype).as_str());
         } else {
             line = None;
         }
 
         Self {
-            message: message.to_string(),
+            message: message,
             location: PipelineLocation::Parsing,
             file: file.to_string(),
             line,
