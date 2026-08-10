@@ -70,4 +70,22 @@ mod tests {
         func2();";
         test_build(code);    
     }
+
+    #[test]
+    fn parse_if_else_if_else() {
+        let code = "if 15 > 0 {
+            do_something();
+        } else if something() {
+            somethingelse()
+        } else {}";
+        test_build(code);
+    }
+
+    #[test]
+    fn parse_function_def() {
+        let code = "let func = () {
+            otherfunc();
+        };";
+        test_build(code);
+    }
 }
