@@ -70,6 +70,7 @@ impl<'a> Parser {
         match word.as_str() {
             "let" => self.parse_let(),
             "if" => self.parse_if(),
+            "for" => self.parse_for(),
             _ => {
                 self.parse_misc(Some(word))
             }
@@ -125,6 +126,22 @@ impl<'a> Parser {
         )
     }
 
+    // parse a for loop
+    // The logic is almost identical to the if statement, just there aren't any else clauses to
+    // worry about
+    fn parse_for(&mut self) -> Result<Node<'a>, Error> {
+        let condition = self.parse_individual_node()?;
+        self.expect_single_char(TokenType::OpenBrace, "to open block while parsing for loop")?;
+        let block = self.parse_block()?;
+
+        Ok(
+            Node::For {
+                condition: Box::new(condition),
+                block: Box::new(block),
+            }
+        )
+    }
+
     // parse child nodes until a CloseBrace is reached
     fn parse_block(&mut self) -> Result<Node<'a>, Error> {
         let mut chains = Vec::new();
@@ -159,10 +176,12 @@ impl<'a> Parser {
         let value = self.parse_individual_node()?;
 
         // check for semicolon
-        self.expect_single_char(
-            TokenType::ChainEnd,
-            "while parsing let statement",
-        )?;
+        if self.current().unwrap().ttype != TokenType::ChainEnd {
+            self.expect_single_char(
+                TokenType::ChainEnd,
+                "while parsing let statement",
+            )?;
+        }
 
         Ok(
             Node::Assignment {

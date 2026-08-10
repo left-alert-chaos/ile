@@ -88,4 +88,12 @@ mod tests {
         };";
         test_build(code);
     }
+
+    #[test]
+    fn parse_for() {
+        let code = "for let x = do_something_i_guess(); {
+            asdf();
+        }";
+        test_build(code);
+    }
 }

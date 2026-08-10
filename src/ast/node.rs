@@ -54,13 +54,13 @@ pub enum Node<'a> {
 
     /// Represents a `while` loop.
     While {
-        condition: Option<Box<Self>>, // should be Chain
+        condition: Box<Self>, // should be Chain
         block: Box<Self>, // should be a CodeBlock
     },
 
     /// Represents a `for` loop.
     For {
-        condition: Option<Box<Self>>, // should be anything executable
+        condition: Box<Self>, // should be anything executable
         block: Box<Self>, // should be a CodeBlock
     },
 
