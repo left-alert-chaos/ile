@@ -7,6 +7,8 @@
 use super::Object;
 use crate::Node;
 
+use std::fmt;
+
 /// # FunctionSignature
 /// This is a wrapper around `Vec<Object<'a>>`. It is used to represent the signatures of Ile
 /// functions to facilitate interoperability.
@@ -22,4 +24,23 @@ pub enum Executable<'a> {
         signature: FunctionSignature<'a>,
         func: &'a dyn Fn(FunctionSignature<'a>) -> Object,
     },
+}
+
+impl fmt::Debug for Executable<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::CodeBlock(n) => write!(f, "{n:?}"),
+            Self::Wrapper { signature, .. } => write!(f, "Executable::Wrapper with signature {}", debug_signature(signature)),
+        }
+    }
+}
+
+fn debug_signature(s: &FunctionSignature<'_>) -> String {
+    let mut res = String::new();
+
+    for object in s {
+        res.push_str(format!("{object:?} ").as_str());
+    }
+
+    res
 }

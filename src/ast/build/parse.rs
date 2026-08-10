@@ -24,8 +24,10 @@ impl<'a> Parser {
         };
 
         while let Some(_) = parser.current() {
+            eprintln!("Adding child to root");
             root.root_add_child(parser.parse_individual_node(fname.clone())?);
         }
+        eprintln!("Done parsing children of root");
 
         Ok(root)
     }
@@ -244,9 +246,12 @@ impl<'a> Parser {
     }
 
     fn current(&self) -> Option<Token> {
-        if self.index > 0 && self.index < self.tokens.len() {
+        eprintln!("Called Parser::current");
+        if self.index < self.tokens.len() {
+            eprintln!("Parser::current: returning Some(_)");
             Some(self.tokens[self.index].clone())
         } else {
+            eprintln!("Parser::current: returning None");
             None
         }
     }

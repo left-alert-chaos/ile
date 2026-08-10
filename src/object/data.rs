@@ -8,7 +8,7 @@ use std::collections::HashMap;
 /// # DataType
 /// This struct represents a data type in Ile. It contains the methods and attributes that objects
 /// that have a type must have.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DataType<'a> {
     pub methods: HashMap<String, Object<'a>>,
     pub attributes: HashMap<String, Object<'a>>,

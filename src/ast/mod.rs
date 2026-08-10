@@ -28,3 +28,24 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, String> {
 
     Ok(Parser::build_root(tokens, path)?)
 }
+
+/// Tokenize the given source code and parse it into an AST.
+/// Not recommended, because it doesn't record the file the code came from.
+pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, String> {
+    let tokens = tokenize(code)?;
+    Ok(Parser::build_root(tokens, String::from("unknown"))?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_hello_world_wip() {
+        let hello_world = "println(\"Hello, world!\");";
+
+        let ast = ast_from_str(hello_world).unwrap();
+        println!("{ast:#?}");
+        panic!();
+    }
+}

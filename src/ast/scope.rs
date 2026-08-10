@@ -12,7 +12,7 @@ use std::{error::Error, fmt};
 /// mechanism is the `current_stack` field, which is a `Vec` of `Variable`s. When the scope is
 /// switched, it counts the `Variable::StackDivider`s until the target scope is reached. It stores
 /// the popped values in other fields to enable a switch back to the previous context.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ScopeStack<'a> {
     current_stack: Vec<Variable<'a>>,
     cached_scopes: Vec<Vec<Variable<'a>>>,

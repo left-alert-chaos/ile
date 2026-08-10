@@ -36,7 +36,7 @@ use std::collections::HashMap;
 /// # Object
 /// An object is anything that Ile code can see. It can be of four classifications: Data, Function,
 /// primitive, or Method. See the module's docstring for more explanation.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Object<'a> {
     /// Holds a code block or wrapped function
     Function(Executable<'a>),
@@ -141,7 +141,7 @@ impl<'a> Object<'a> {
 /// # Variable
 /// This is a small struct that wraps `Object`. It adds a name field for named values and represents
 /// all values with names, be them attributes or variables.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Variable<'a> {
     /// This is the default variant and represents all values.
     Var { name: String, value: Object<'a> },
@@ -184,7 +184,7 @@ impl<'a> Variable<'a> {
 /// # ScopeType
 /// This represents any of the kinds of dividers there are. This is used to determine how far back
 /// to pop off the stack when a scope ends or a `return` statement is encountered.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ScopeType {
     /// Represents a function scope
     Function,

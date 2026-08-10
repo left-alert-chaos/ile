@@ -6,6 +6,8 @@
 use super::scope::ScopeStack;
 use crate::{DataType, Executable, FunctionSignature, Object, Variable, TokenType};
 
+use std::fmt;
+
 /// # Path
 /// This is an alias for `Vec<String>` and used to represent a path to an object.
 type Path = Vec<String>;
@@ -16,7 +18,7 @@ type Children<'a> = Vec<Node<'a>>;
 
 /// # Node
 /// A node is any part of an AST.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Node<'a> {
     /// Represents a function call
     Call {
