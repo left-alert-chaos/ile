@@ -2,12 +2,9 @@
 //! This module holds code to convert a list of `Token`s into a walkable Abstract Syntax Tree. It's
 //! mostly in an `impl` block for `Node`.
 
-use crate::{DataType, FunctionSignature, Node, Token, TokenType, error::Error, Object};
+use crate::{Node, Token, TokenType, error::Error, Object};
 
-use std::{
-    collections::HashMap,
-    ops::Deref,
-};
+use std::collections::HashMap;
 
 /// # Parser
 pub struct Parser {
@@ -31,7 +28,7 @@ impl<'a> Parser {
             fname,
         };
 
-        while let Some(_) = parser.peek_next() {
+        while parser.peek_next().is_some() {
             let child = parser.parse_individual_node()?;
             root.root_add_child(child);
         }
@@ -203,7 +200,6 @@ impl<'a> Parser {
 
         // read all let statements
         while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBrace {
-            println!("peeked token is {token:?}");
             let assignment = self.parse_individual_node()?;
 
             let Node::Assignment { path, value, create } = assignment else {
@@ -426,7 +422,7 @@ impl<'a> Parser {
         if !self.started {
             self.started = true;
 
-            if self.tokens.len() > 0 {
+            if !self.tokens.is_empty() {
                 return Some(self.tokens[0].clone());
             } else {
                 return None;
@@ -444,7 +440,7 @@ impl<'a> Parser {
     fn peek_next(&self) -> Option<Token> {
         // make sure to use the 0-index token
         if !self.started {
-            if self.tokens.len() > 0 {
+            if !self.tokens.is_empty() {
                 return Some(self.tokens[0].clone());
             } else {
                 return None;

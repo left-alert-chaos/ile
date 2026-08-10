@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{DataType, Object, Variable, TokenType};
+use crate::{Object, Variable, TokenType};
 
 use std::collections::HashMap;
 
@@ -106,10 +106,7 @@ impl Node<'_> {
             return true;
         }
 
-        match name.as_str() {
-            "Integer" | "Boolean" | "Float" | "String" | "Function" => true,
-            _ => false,
-        }
+        matches!(name.as_str(), "Integer" | "Boolean" | "Float" | "String" | "Function")
     }
 
     /// Create a new `Node::Root`

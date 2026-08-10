@@ -140,9 +140,9 @@ impl<'a> ScopeStack<'a> {
 
     /// Pop until a `Variable::StackDivider(Some(ScopeType::Function))` is found. Used to remove unused values
     /// after a function returns.
-    /// Ass with all other operations, if it runs out of variables to pop, it restores all of the
+    /// As with all other operations, if it runs out of variables to pop, it restores all of the
     /// impacted vars and returns an `Err()`
-    fn return_cleanup(&mut self) -> Result<(), ScopeError> {
+    pub fn return_cleanup(&mut self) -> Result<(), ScopeError> {
         let mut bin = Vec::new();
 
         loop {

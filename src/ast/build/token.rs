@@ -148,12 +148,7 @@ impl fmt::Display for TokenType {
 impl TokenType {
     /// Determine if the token is logical operator
     pub fn is_operator(&self) -> bool {
-        match self {
-            Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo => {
-                true
-            }
-            _ => false,
-        }
+        matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo)
     }
 
     /// Determine if two tokens have the same TokenType (ignoring inner values)

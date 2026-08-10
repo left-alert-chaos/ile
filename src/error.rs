@@ -29,7 +29,7 @@ impl fmt::Debug for Error {
     }
 }
 
-impl<'a> Error {
+impl Error {
     /// Create an `Error` in the parsing pipeline stage with the given message and token
     pub fn new_parsing(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
         let mut message = message.to_string();
@@ -42,7 +42,7 @@ impl<'a> Error {
         }
 
         Self {
-            message: message,
+            message,
             location: PipelineLocation::Parsing,
             file: file.to_string(),
             line,

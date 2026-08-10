@@ -170,10 +170,7 @@ pub enum Variable<'a> {
 impl<'a> Variable<'a> {
     /// Return whether this `Variable` is a `StackDivider` or a `Var`
     pub fn is_divider(&self) -> bool {
-        match self {
-            Self::StackDivider(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::StackDivider(_))
     }
 
     /// Return the name of the variable, if it has one.
@@ -189,7 +186,7 @@ impl<'a> Variable<'a> {
     pub fn new_datatype(dt: DataType<'a>) -> Self {
         Self::Datatype {
             name: dt.name.clone(),
-            dt: dt,
+            dt,
         }
     }
 }
