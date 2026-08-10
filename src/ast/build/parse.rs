@@ -43,7 +43,12 @@ impl<'a> Parser {
 
         // literals
         if let Ok(obj) = Object::from_token(token.clone()) {
-            return Ok(Node::Literal(obj));
+            if let Some(next) = self.peek_next() && next.ttype.is_operator() {
+                self.index -= 1;
+                return self.parse_misc(None);
+            } else {
+                return Ok(Node::Literal(obj));
+            }
         }
 
         if token.ttype == TokenType::OpenBrace {
@@ -63,7 +68,7 @@ impl<'a> Parser {
             "let" => self.parse_let(),
             "if" => self.parse_if(),
             _ => {
-                self.parse_misc(word)
+                self.parse_misc(Some(word))
             }
         }
     }
@@ -189,9 +194,14 @@ impl<'a> Parser {
     }
 
     /// Parse a non-keyword
-    fn parse_misc(&mut self, word: String) -> Result<Node<'a>, Error> {
+    fn parse_misc(&mut self, word: Option<String>) -> Result<Node<'a>, Error> {
         // non-keywords are always paths to something else, so read the path
-        let mut path = Vec::from([word]);
+        let mut path = Vec::new();
+
+        if let Some(word) = word {
+            path.push(word);
+        }
+
         let mut chain = Vec::new();
         while let Some(token) = self.next() {
             match token.ttype.clone() {
@@ -209,16 +219,21 @@ impl<'a> Parser {
                 }
                 TokenType::Assignment => return self.parse_assignment(path),
                 TokenType::ChainEnd | TokenType::Comma => break,
-                TokenType::CloseParen | TokenType::CloseBrace => {
+                TokenType::CloseParen | TokenType::CloseBrace | TokenType::OpenBrace => {
                     self.index -= 1;
                     break;
                 }
-                // push an operator or raise an error
+                // push an operator or literal or raise an error
                 _ => {
                     if token.ttype.is_operator() {
-                        chain.push(Node::Variable(path.clone()));
-                        path.clear(); //paving the way lol
+                        if !path.is_empty() {
+                            chain.push(Node::Variable(path.clone()));
+                            path.clear(); //paving the way lol
+                        }
+
                         chain.push(Node::Operator(token.ttype.clone()));
+                    } else if let Ok(obj) = Object::from_token(token.clone()) {
+                        chain.push(Node::Literal(obj));
                     } else {
                         return Err(
                             Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), self.fname.clone())
