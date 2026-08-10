@@ -66,9 +66,9 @@ pub enum Node<'a> {
 
     /// Represents an `if` block.
     If {
-        condition: Option<Box<Self>>, // should be Chain
+        condition: Box<Self>, // should be Chain
         block: Box<Self>, // should be a codeblock
-        secondary_conditions: Children<'a>, // should be If
+        else_clause: Option<Box<Self>>, // can be anything walkable
     },
 
     /// Represents the root of one module. Modules can hold others.

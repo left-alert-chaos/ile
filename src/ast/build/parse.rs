@@ -46,6 +46,10 @@ impl<'a> Parser {
             return Ok(Node::Literal(obj));
         }
 
+        if token.ttype == TokenType::OpenBrace {
+            return self.parse_block();
+        }
+
         let TokenType::Word(word) = token.ttype.clone() else {
             return Err(Error::new_parsing(
                 Some(token.clone()),
@@ -57,10 +61,56 @@ impl<'a> Parser {
         // determine node type from first token
         match word.as_str() {
             "let" => self.parse_let(),
+            "if" => self.parse_if(),
             _ => {
                 self.parse_misc(word)
             }
         }
+    }
+
+    /// parse an if statement, including and else
+    fn parse_if(&mut self) -> Result<Node<'a>, Error> {
+        let condition = self.parse_individual_node()?;
+        self.expect_single_char(TokenType::OpenBrace, "to open block while parsing if statement")?;
+        let block = self.parse_block()?;
+
+        // else clause?
+        let else_clause = if let Some(next) = self.peek_next() && next.ttype == TokenType::Word(String::from("else")) {
+            self.index += 1;
+            Some(Box::new(self.parse_individual_node()?))
+        } else {
+            None
+        };
+
+        Ok(
+            Node::If {
+                condition: Box::new(condition),
+                block: Box::new(block),
+                else_clause,
+            }
+        )
+    }
+
+    // parse child nodes until a CloseBrace is reached
+    fn parse_block(&mut self) -> Result<Node<'a>, Error> {
+        let mut chains = Vec::new();
+
+        while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBrace {
+            chains.push(self.parse_individual_node()?);
+        }
+
+        // consume CloseBrace or EOF?
+        match self.peek_next() {
+            Some(_) => self.index += 1,
+            None => return Err(Error::new_parsing(None, "unexpected EOF while parsing block", self.fname.clone())),
+        }
+
+        Ok(
+            Node::CodeBlock {
+                chains,
+                signature: Vec::new(),
+            }
+        )
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {
@@ -104,6 +154,7 @@ impl<'a> Parser {
             }
         )
     }
+
 
     fn parse_call(&mut self, path: Vec<String>) -> Result<Node<'a>, Error> {
         let mut children = Vec::new();
