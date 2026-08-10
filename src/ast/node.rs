@@ -114,6 +114,22 @@ impl Node<'_> {
         }
     }
 
+    /// Add a child to a `Node::Root` and panic if the called node isn't a `Root`
+    pub fn root_add_child(&mut self, child: Self) {
+        let Self::Root { name, stack, imports, statements } = self else {
+            panic!("tried to call root_add_child on a non-root node!");
+        };
+
+        statements.push(child);
+
+        *self = Self::Root {
+            name: name.clone(),
+            stack: stack.clone(),
+            imports: imports.clone(),
+            statements: statements.clone()
+        };
+    }
+
     /*
     /// Add a child to a node
     pub fn add_child(&mut self, child: Self) -> Result<(), String> {

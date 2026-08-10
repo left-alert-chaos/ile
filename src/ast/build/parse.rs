@@ -18,14 +18,13 @@ impl<'a> Parser {
     pub fn build_root(tokens: Vec<Token>, fname: String) -> Result<Node<'a>, Error> {
         let mut root = Node::new_root(fname.clone());
 
-        for token in tokens.iter() {
-            match token.ttype {
-                // handle opening a code
-                TokenType::OpenBrace => {}
-                // end the current node
-                TokenType::ChainEnd => {}
-                _ => {}
-            }
+        let mut parser = Self {
+            tokens,
+            index: 0,
+        };
+
+        while let Some(_) = parser.current() {
+            root.root_add_child(parser.parse_individual_node(fname.clone())?);
         }
 
         Ok(root)
@@ -97,23 +96,28 @@ impl<'a> Parser {
         )
     }
 
-    // TODO: Here, parse a function signature, which is either words in parens or expressions in
-    // parens
-    fn parse_call(&mut self, fname: String) -> Result<Node<'a>, Error> {
+    fn parse_call(&mut self, fname: String, path: Vec<String>) -> Result<Node<'a>, Error> {
         let mut children = Vec::new();
 
         loop {
             children.push(self.parse_individual_node(fname.clone())?);
 
-            // check next token
-            let Some(next) = self.peek_next() else {
+            // check previous token to determine if the parens ended or its a comma
+            let Some(prev) = self.peek_prev() else {
                 return Err(Error::new_parsing(None, "unexpected EOF while parsing function call", fname));
             };
 
-            match next.ttype {
-                _ => todo!()
+            if prev.ttype == TokenType::CloseParen {
+                break;
             }
         }
+
+        Ok(
+            Node::Call {
+                arguments: children,
+                path,
+            }
+        )
     }
 
     /// Parse a non-keyword
@@ -133,7 +137,7 @@ impl<'a> Parser {
             match token.ttype.clone() {
                 TokenType::PathSeparator => {},
                 TokenType::Word(w) => path.push(w),
-                TokenType::OpenParen => chain.push(self.parse_call(fname.clone())?),
+                TokenType::OpenParen => chain.push(self.parse_call(fname.clone(), path.clone())?),
                 TokenType::Assignment => return self.parse_assignment(path, fname.clone()),
                 TokenType::ChainEnd => break,
                 // push an operator or raise an error
@@ -224,7 +228,7 @@ impl<'a> Parser {
     fn peek_next(&self) -> Option<Token> {
         let index = self.index + 1;
         if self.index < self.tokens.len() {
-            Some(self.tokens[self.index].clone())
+            Some(self.tokens[index].clone())
         } else {
             None
         }
@@ -233,6 +237,14 @@ impl<'a> Parser {
     fn peek_prev(&self) -> Option<Token> {
         let index = self.index - 1;
         if index > 0 && index < self.tokens.len() {
+            Some(self.tokens[index].clone())
+        } else {
+            None
+        }
+    }
+
+    fn current(&self) -> Option<Token> {
+        if self.index > 0 && self.index < self.tokens.len() {
             Some(self.tokens[self.index].clone())
         } else {
             None
