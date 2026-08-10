@@ -121,6 +121,7 @@ impl<'a> Parser {
             };
 
             if next.ttype == TokenType::CloseParen {
+                self.index += 1;
                 break;
             }
         }
