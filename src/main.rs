@@ -1,12 +1,14 @@
-use ile::ast_from_str;
-
-//println(\"hello world!\");
 fn main() {
-    let code = "println(get_text(), 5); let x = 5;";
-    match ast_from_str(code) {
-        Ok(ast) => {
-            println!("\n\n\nDone! AST:\n{ast:#?}");
+    let args: Vec<String> = std::env::args().into_iter().collect();
+
+    if args.len() < 2 {
+        eprintln!("ile: no arguments were given");
+    } else {
+        match ile::ast_from_file(args[1].clone()) {
+            Ok(ast) => {
+                println!("\n\nDone! AST:\n{ast:#?}");
+            }
+            Err(e) => println!("\n\n{e}"),
         }
-        Err(e) => println!("\n\n{e}"),
     }
 }
