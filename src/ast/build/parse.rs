@@ -10,6 +10,7 @@ pub struct Parser {
     index: usize,
     tokens: Vec<Token>,
     started: bool,
+    fname: String,
 }
 
 impl<'a> Parser {
@@ -23,10 +24,11 @@ impl<'a> Parser {
             tokens,
             index: 0,
             started: false,
+            fname,
         };
 
         while let Some(_) = parser.peek_next() {
-            let child = parser.parse_individual_node(fname.clone())?;
+            let child = parser.parse_individual_node()?;
             root.root_add_child(child);
         }
 
@@ -34,10 +36,10 @@ impl<'a> Parser {
     }
 
     // Responsible for creating a node and recursing to create children
-    fn parse_individual_node(&mut self, fname: String) -> Result<Node<'a>, Error> {
+    fn parse_individual_node(&mut self) -> Result<Node<'a>, Error> {
         //Extract first token's info
         let Some(token) = self.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF", fname.as_str()));
+            return Err(Error::new_parsing(None, "unexpected EOF", self.fname.as_str()));
         };
 
         // literals
@@ -49,35 +51,33 @@ impl<'a> Parser {
             return Err(Error::new_parsing(
                 Some(token.clone()),
                 "expected word",
-                fname.as_str(),
+                self.fname.as_str(),
             ));
         };
 
         // determine node type from first token
         match word.as_str() {
-            "let" => self.parse_let(fname),
+            "let" => self.parse_let(),
             _ => {
-                self.parse_misc(word, fname)
+                self.parse_misc(word)
             }
         }
     }
 
-    fn parse_let(&mut self, fname: String) -> Result<Node<'a>, Error> {
-        let name = self.expect_word(fname.clone(), "expected variable name")?;
+    fn parse_let(&mut self) -> Result<Node<'a>, Error> {
+        let name = self.expect_word("expected variable name")?;
 
         // check if there's an equals sign
         self.expect_single_char(
             TokenType::Assignment,
-            fname.clone(),
             "while parsing let statement",
         )?;
 
-        let value = self.parse_individual_node(fname.clone())?;
+        let value = self.parse_individual_node()?;
 
         // check for semicolon
         self.expect_single_char(
             TokenType::ChainEnd,
-            fname,
             "while parsing let statement",
         )?;
 
@@ -90,11 +90,10 @@ impl<'a> Parser {
         )
     }
 
-    fn parse_assignment(&mut self, path: Vec<String>, fname: String) -> Result<Node<'a>, Error> {
-        let value = self.parse_individual_node(fname.clone())?;
+    fn parse_assignment(&mut self, path: Vec<String>) -> Result<Node<'a>, Error> {
+        let value = self.parse_individual_node()?;
         self.expect_single_char(
             TokenType::ChainEnd,
-            fname,
             "while parsing assignment",
         )?;
         
@@ -107,7 +106,7 @@ impl<'a> Parser {
         )
     }
 
-    fn parse_call(&mut self, fname: String, path: Vec<String>) -> Result<Node<'a>, Error> {
+    fn parse_call(&mut self, path: Vec<String>) -> Result<Node<'a>, Error> {
         let mut children = Vec::new();
 
         loop {
@@ -117,7 +116,7 @@ impl<'a> Parser {
                 break
             }
 
-            children.push(self.parse_individual_node(fname.clone())?);
+            children.push(self.parse_individual_node()?);
 
             // check next token to determine if the parens ended or its a comma
             if let Some(next) = self.peek_next() && next.ttype == TokenType::CloseParen {
@@ -140,7 +139,7 @@ impl<'a> Parser {
     }
 
     /// Parse a non-keyword
-    fn parse_misc(&mut self, word: String, fname: String) -> Result<Node<'a>, Error> {
+    fn parse_misc(&mut self, word: String) -> Result<Node<'a>, Error> {
         // non-keywords are always paths to something else, so read the path
         let mut path = Vec::from([word]);
         let mut chain = Vec::new();
@@ -149,7 +148,7 @@ impl<'a> Parser {
                 TokenType::PathSeparator => {},
                 TokenType::Word(w) => path.push(w),
                 TokenType::OpenParen => {
-                    chain.push(self.parse_call(fname.clone(), path.clone())?);
+                    chain.push(self.parse_call(path.clone())?);
                     
                     // if the call consumed a semicolon, break
                     if let Some(current) = self.current() && current.ttype == TokenType::ChainEnd {
@@ -158,9 +157,9 @@ impl<'a> Parser {
 
                     path.clear();
                 }
-                TokenType::Assignment => return self.parse_assignment(path, fname.clone()),
+                TokenType::Assignment => return self.parse_assignment(path),
                 TokenType::ChainEnd | TokenType::Comma => break,
-                TokenType::CloseParen => {
+                TokenType::CloseParen | TokenType::CloseBrace => {
                     self.index -= 1;
                     break;
                 }
@@ -172,7 +171,7 @@ impl<'a> Parser {
                         chain.push(Node::Operator(token.ttype.clone()));
                     } else {
                         return Err(
-                            Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), fname)
+                            Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), self.fname.clone())
                         )
                     }
                 }
@@ -188,21 +187,20 @@ impl<'a> Parser {
     /// specified message
     fn expect_word(
         &mut self,
-        fname: String,
         message: &str,
     ) -> Result<String, Error> {
         let Some(word) = self.next() else {
             return Err(Error::new_parsing(
                 None,
                 "unexpected EOF (expected word token)",
-                fname,
+                self.fname.clone(),
             ));
         };
         let TokenType::Word(word) = word.ttype.clone() else {
             return Err(Error::new_parsing(
                 Some(word.clone()),
                 format!("{message} (Word token);\nfound {}", word.ttype),
-                fname,
+                self.fname.clone(),
             ));
         };
 
@@ -214,7 +212,6 @@ impl<'a> Parser {
     fn expect_single_char(
         &mut self,
         token_type: TokenType,
-        fname: String,
         message: impl ToString,
     ) -> Result<(), Error> {
         let message = message.to_string();
@@ -223,7 +220,7 @@ impl<'a> Parser {
             return Err(Error::new_parsing(
                 None,
                 format!("unexpected EOF (expected {token_type} token) {message}"),
-                fname,
+                self.fname.clone(),
             ));
         };
         if token.ttype != token_type {
@@ -233,7 +230,7 @@ impl<'a> Parser {
                     "expected {token_type} token {message};\nfound {}",
                     token.ttype
                 ),
-                fname,
+                self.fname.clone(),
             ))
         } else {
             Ok(())
@@ -272,15 +269,6 @@ impl<'a> Parser {
 
         let index = self.index + 1;
         if index < self.tokens.len() {
-            Some(self.tokens[index].clone())
-        } else {
-            None
-        }
-    }
-
-    fn peek_prev(&self) -> Option<Token> {
-        let index = self.index - 1;
-        if index > 0 && index < self.tokens.len() {
             Some(self.tokens[index].clone())
         } else {
             None
