@@ -334,6 +334,7 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
             // process string literals
             '"' => {
                 string = !string;
+                buffer.push('"');
                 if !string {
                     finish_token(&mut buffer, string, line)?;
                 }
