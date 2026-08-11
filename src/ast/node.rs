@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{Object, Variable, TokenType};
+use crate::{Object, Variable, TokenType, Token};
 
 use std::collections::HashMap;
 
@@ -13,13 +13,13 @@ use std::collections::HashMap;
 type Path = Vec<String>;
 
 /// # Children<'a>
-/// This is an alias for `Vec<Node<'a>>`, used to represent a `Node`'s children.
+/// This is an alias for `Vec<Node<'a>Type<'a>>`, used to represent a `Node`'s children.
 type Children<'a> = Vec<Node<'a>>;
 
-/// # Node
+/// # Node<'a>Type
 /// A node is any part of an AST.
 #[derive(Clone, Debug)]
-pub enum Node<'a> {
+pub enum NodeType<'a> {
     /// Represents a function call
     Call {
         arguments: Children<'a>,
@@ -38,14 +38,14 @@ pub enum Node<'a> {
         signature: Vec<String>,
     },
 
-    /// Represents a statement. It holds a `Vec` of `Node::Call`, `Node::Variable`, or
-    /// `Node::Literal`s to allow for method chaining.
+    /// Represents a statement. It holds a `Vec` of `Node<'a>Type::Call`, `Node::Variable`, or
+    /// `Node<'a>Type::Literal`s to allow for method chaining.
     Chain(Children<'a>), // children should be Call or Literal or Variable
 
     /// Represents assigning a value to a named variable.
     Assignment {
         path: Path,
-        value: Box<Self>, // child should be Chain
+        value: Box<Node<'a>>, // child should be Chain
 
         /// Represents whether this is a `let` statement (creating a variable) or a reassignment
         create: bool,
@@ -56,27 +56,27 @@ pub enum Node<'a> {
     /// are only usable at runtime
     DataType {
         name: String,
-        methods: HashMap<String, Self>,
-        attributes: HashMap<String, Self>,
+        methods: HashMap<String, Node<'a>>,
+        attributes: HashMap<String, Node<'a>>,
     },
 
     /// Represents a `while` loop.
     While {
-        condition: Box<Self>, // should be Chain
-        block: Box<Self>, // should be a CodeBlock
+        condition: Box<Node<'a>>, // should be Chain
+        block: Box<Node<'a>>, // should be a CodeBlock
     },
 
     /// Represents a `for` loop.
     For {
-        condition: Box<Self>, // should be anything executable
-        block: Box<Self>, // should be a CodeBlock
+        condition: Box<Node<'a>>, // should be anything executable
+        block: Box<Node<'a>>, // should be a CodeBlock
     },
 
     /// Represents an `if` block.
     If {
-        condition: Box<Self>, // should be Chain
-        block: Box<Self>, // should be a codeblock
-        else_clause: Option<Box<Self>>, // can be anything walkable
+        condition: Box<Node<'a>>, // should be Chain
+        block: Box<Node<'a>>, // should be a codeblock
+        else_clause: Option<Box<Node<'a>>>, // can be anything walkable
     },
 
     /// Represents the root of one module. Modules can hold others.
@@ -94,40 +94,35 @@ pub enum Node<'a> {
     Literal(Object<'a>),
 }
 
-impl Node<'_> {
-    /// Determine if the provided String is a known type or classification
-    pub fn is_type_or_class(&mut self, name: String) -> bool {
-        let Self::Root { stack, .. } = self else {
-            panic!("called is_type_or_class on a non-root Node!");
-        };
+#[derive(Clone, Debug)]
+pub struct Node<'a> {
+    pub token: Option<Token>,
+    pub ntype: NodeType<'a>,
+}
 
-        let lookup = stack.lookup(&name);
-        if let Some(Variable::Datatype { .. }) = lookup {
-            return true;
-        }
-
-        matches!(name.as_str(), "Integer" | "Boolean" | "Float" | "String" | "Function")
-    }
-
-    /// Create a new `Node::Root`
-    pub fn new_root(name: String) -> Self {
-        Self::Root {
-            name,
-            stack: ScopeStack::new(),
-            imports: Vec::new(),
-            statements: Vec::new(),
+impl<'a> Node<'a>{
+    /// Create a new `Node<'a>Type::Root`
+    pub fn new_root(name: String) -> Node<'a> {
+        Node {
+            token: None,
+            ntype: NodeType::Root {
+                name,
+                stack: ScopeStack::new(),
+                imports: Vec::new(),
+                statements: Vec::new(),
+            }
         }
     }
 
-    /// Add a child to a `Node::Root` and panic if the called node isn't a `Root`
+    /// Add a child to a `Node<'a>Type::Root` and panic if the called node isn't a `Root`
     pub fn root_add_child(&mut self, child: Self) {
-        let Self::Root { name, stack, imports, statements } = self else {
+        let NodeType::Root { name, stack, imports, mut statements } = self.ntype.clone() else {
             panic!("tried to call root_add_child on a non-root node!");
         };
 
         statements.push(child);
 
-        *self = Self::Root {
+        self.ntype = NodeType::Root {
             name: name.clone(),
             stack: stack.clone(),
             imports: imports.clone(),
