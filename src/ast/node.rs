@@ -92,6 +92,9 @@ pub enum NodeType<'a> {
 
     /// Represents a literal declaration
     Literal(Object<'a>),
+
+    /// Represents an `import` statement
+    Import(String),
 }
 
 #[derive(Clone, Debug)]

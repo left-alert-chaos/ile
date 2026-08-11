@@ -165,6 +165,9 @@ pub enum Variable<'a> {
     /// This variant represents a switch between scopes and is used to determine what part of the
     /// stack to keep what what part to remove.
     StackDivider(Option<ScopeType>),
+
+    /// Represents an imported module
+    Module(Node<'a>),
 }
 
 impl<'a> Variable<'a> {
@@ -179,6 +182,8 @@ impl<'a> Variable<'a> {
             Self::Var { name, .. } => Some(name.clone()),
             Self::Datatype { name, .. } => Some(name.clone()),
             Self::StackDivider(_) => None,
+            Self::Module(Node { ntype: NodeType::Root { name, .. }, .. }) => Some(name.clone()),
+            _ => unreachable!(),
         }
     }
 

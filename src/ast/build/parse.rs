@@ -78,6 +78,7 @@ impl<'a> Parser {
             "for" => self.parse_for(),
             "while" => self.parse_while(),
             "datatype" => self.parse_datatype(),
+            "import" => self.parse_import(),
             _ => {
                 self.parse_misc(Some(word))
             }
@@ -416,7 +417,7 @@ impl<'a> Parser {
                     } else {
                         return Err(
                             Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), self.fname.clone())
-                        )
+                        );
                     }
                 }
             }
@@ -426,6 +427,24 @@ impl<'a> Parser {
             Node {
                 ntype: NodeType::Chain(chain),
                 token: Some(self.current().unwrap()),
+            }
+        )
+    }
+
+    fn parse_import(&mut self) -> Result<Node<'a>, Error> {
+        let Some(token) = self.next() else {
+            return Err(Error::new_parsing(None, "unexpected EOF while parsing import", self.fname.clone()));
+        };
+        let TokenType::String(modname) = token.clone().ttype else {
+            return Err(Error::new_parsing(Some(token.clone()), format!("import names must be Strings, not {}", token.clone().ttype).as_str(), self.fname.clone()));
+        };
+
+        self.expect_single_char(TokenType::ChainEnd, "while parsing import")?;
+
+        Ok(
+            Node {
+                ntype: NodeType::Import(modname),
+                token: Some(token),
             }
         )
     }
