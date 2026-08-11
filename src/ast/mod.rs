@@ -4,28 +4,30 @@
 pub mod build;
 pub mod node;
 pub mod scope;
-//mod walk;
+mod walk;
 
 pub use build::*;
 pub use node::*;
 
+use crate::*;
+
 /// Read a file at the given path and perform the entire module pipeline:
 /// - Tokenize the contents
 /// - Parse an abstract syntax tree from the tokens
-pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, String> {
+pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, Error> {
     let path = path.to_string();
 
     let chars = match std::fs::read(&path) {
         Ok(text) => text,
-        Err(_) => return Err(format!("couldn't find module '{path}'")),
+        Err(_) => return Err(Error::new_parsing(None, format!("couldn't locate module '{path}'"), path)),
     };
 
     let text = match String::from_utf8(chars) {
         Ok(text) => text,
-        Err(_) => return Err(format!("couldn't read module '{path}' as utf8")),
+        Err(_) => return Err(Error::new_parsing(None, format!("couldn't read module '{path}' as utf-8"), path)),
     };
 
-    let tokens = tokenize(text)?;
+    let tokens = tokenize(text, Some(path.clone()))?;
 
     Ok(Parser::build_root(tokens, path)?)
 }
@@ -33,7 +35,7 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, String> {
 /// Tokenize the given source code and parse it into an AST.
 /// Not recommended, because it doesn't record the file the code came from.
 pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, String> {
-    let tokens = tokenize(code)?;
+    let tokens = tokenize(code, None)?;
     eprintln!("{tokens:#?}");
     Ok(Parser::build_root(tokens, String::from("unknown"))?)
 }

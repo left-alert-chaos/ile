@@ -11,7 +11,7 @@ pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
 
 impl<'a> Node<'a> {
     /// Execute the node.
-    pub fn walk(&self, stack: &mut scope::ScopeStack) -> FunctionResult {
+    pub fn walk(&mut self, stack: &mut scope::ScopeStack) -> FunctionResult {
         match self.ntype {
             NodeType::Assignment { .. } => self.walk_assignment(stack),
             _ => {Ok(None)}
@@ -25,5 +25,18 @@ impl<'a> Node<'a> {
 
         // figure out where the assignment is
         
+    }
+
+    fn walk_import(&self, stack: &mut scope::ScopeStack) -> FunctionResult {
+        let NodeType::Import(path) = self.ntype else {
+            unreachable!();
+        };
+
+        let ast = match ast_from_file(path) {
+            Ok(ast) => ast,
+            Err(reason) => {
+                reason.file = 
+            }
+        }
     }
 }

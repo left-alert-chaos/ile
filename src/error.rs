@@ -11,10 +11,10 @@ use crate::*;
 /// This type represents an issue with tokenization, parsing, or execution. It is often returned
 /// inside an `Err(Error)`.
 pub struct Error {
-    message: String,
-    location: PipelineLocation,
-    file: String,
-    token: Option<Token>,
+    pub message: String,
+    pub location: PipelineLocation,
+    pub file: String,
+    pub token: Option<Token>,
 }
 
 impl fmt::Display for Error {
