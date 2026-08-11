@@ -2,7 +2,7 @@
 //! This module holds code to convert a list of `Token`s into a walkable Abstract Syntax Tree. It's
 //! mostly in an `impl` block for `Node`.
 
-use crate::{Node, Token, TokenType, error::Error, Object};
+use crate::{Node, NodeType, Token, TokenType, error::Error, Object};
 
 use std::collections::HashMap;
 
@@ -55,7 +55,10 @@ impl<'a> Parser {
                 self.index -= 1;
                 return self.parse_misc(None);
             } else {
-                return Ok(Node::Literal(obj));
+                return Ok(Node {
+                    ntype: NodeType::Literal(obj),
+                    token: Some(token)
+                });
             }
         }
 
@@ -95,11 +98,13 @@ impl<'a> Parser {
         }
 
         // parse block
+        // the first match arm is a node holding a nodetype::codeblock and the only extrracted value
+        // is chains
         self.expect_single_char(TokenType::OpenBrace, "while parsing function definition")?;
         match self.parse_block() {
-            Ok(Node::CodeBlock { chains, .. }) => {
+            Ok(Node { ntype: NodeType::CodeBlock { chains, .. }, .. }) => {
                 Ok(
-                    Node::CodeBlock { chains, signature }
+                    Node { ntype: NodeType::CodeBlock { chains, signature }, token: Some(self.current().unwrap()) }
                 )
             }
             Err(e) => Err(e),
@@ -122,10 +127,13 @@ impl<'a> Parser {
         };
 
         Ok(
-            Node::If {
-                condition: Box::new(condition),
-                block: Box::new(block),
-                else_clause,
+            Node {
+                ntype: NodeType::If {
+                    condition: Box::new(condition),
+                    block: Box::new(block),
+                    else_clause,
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -139,9 +147,12 @@ impl<'a> Parser {
         let block = self.parse_block()?;
 
         Ok(
-            Node::For {
-                condition: Box::new(condition),
-                block: Box::new(block),
+            Node {
+                ntype: NodeType::For {
+                    condition: Box::new(condition),
+                    block: Box::new(block),
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -154,9 +165,12 @@ impl<'a> Parser {
         let block = self.parse_block()?;
 
         Ok(
-            Node::While {
-                condition: Box::new(condition),
-                block: Box::new(block),
+            Node {
+                ntype: NodeType::While {
+                    condition: Box::new(condition),
+                    block: Box::new(block),
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -176,9 +190,12 @@ impl<'a> Parser {
         }
 
         Ok(
-            Node::CodeBlock {
-                chains,
-                signature: Vec::new(),
+            Node {
+                ntype: NodeType::CodeBlock {
+                    chains,
+                    signature: Vec::new(),
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -202,7 +219,7 @@ impl<'a> Parser {
         while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBrace {
             let assignment = self.parse_individual_node()?;
 
-            let Node::Assignment { path, value, create } = assignment else {
+            let NodeType::Assignment { path, value, create } = assignment.ntype else {
                 return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions", self.fname.clone()))
             };
 
@@ -215,11 +232,11 @@ impl<'a> Parser {
             }
 
             // determine where to put value
-            match *value {
-                Node::CodeBlock { .. } => {
+            match value.ntype {
+                NodeType::CodeBlock { .. } => {
                     methods.insert(path[0].clone(), *value);
                 }
-                Node::Literal(_) | Node::Call { .. } => {
+                NodeType::Literal(_) | NodeType::Call { .. } => {
                     attributes.insert(path[0].clone(), *value);
                 }
                 _ => return Err(Error::new_parsing(Some(self.current().unwrap()), "only functions, calls, and literals can be assigned inside datatype definitions", self.fname.clone())),
@@ -228,7 +245,7 @@ impl<'a> Parser {
 
         self.expect_single_char(TokenType::CloseBrace, "while parsing end of datatype definition")?;
 
-        Ok(Node::DataType { name, methods, attributes })
+        Ok(Node { ntype: NodeType::DataType { name, methods, attributes }, token: Some(self.current().unwrap())})
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {
@@ -251,10 +268,13 @@ impl<'a> Parser {
         }
 
         Ok(
-            Node::Assignment {
-                path: Vec::from([name]),
-                value: Box::new(value),
-                create: true
+            Node {
+                ntype: NodeType::Assignment {
+                    path: Vec::from([name]),
+                    value: Box::new(value),
+                    create: true
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -267,10 +287,13 @@ impl<'a> Parser {
         )?;
         
         Ok(
-            Node::Assignment {
-                path,
-                value: Box::new(value),
-                create: false,
+            Node {
+                ntype: NodeType::Assignment {
+                    path,
+                    value: Box::new(value),
+                    create: false,
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -301,9 +324,12 @@ impl<'a> Parser {
         }
 
         Ok(
-            Node::Call {
-                arguments: children,
-                path,
+            Node {
+                ntype: NodeType::Call {
+                    arguments: children,
+                    path,
+                },
+                token: Some(self.current().unwrap()),
             }
         )
     }
@@ -342,13 +368,13 @@ impl<'a> Parser {
                 _ => {
                     if token.ttype.is_operator() {
                         if !path.is_empty() {
-                            chain.push(Node::Variable(path.clone()));
+                            chain.push(Node { ntype: NodeType::Variable(path.clone()), token: Some(token.clone()) });
                             path.clear(); //paving the way lol
                         }
 
-                        chain.push(Node::Operator(token.ttype.clone()));
+                        chain.push(Node { ntype: NodeType::Operator(token.ttype.clone()), token: Some(token) });
                     } else if let Ok(obj) = Object::from_token(token.clone()) {
-                        chain.push(Node::Literal(obj));
+                        chain.push(Node { ntype: NodeType::Literal(obj), token: Some(token) });
                     } else {
                         return Err(
                             Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), self.fname.clone())
@@ -359,7 +385,10 @@ impl<'a> Parser {
         }
 
         Ok(
-            Node::Chain(chain)
+            Node {
+                ntype: NodeType::Chain(chain),
+                token: Some(self.current().unwrap()),
+            }
         )
     }
 

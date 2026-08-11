@@ -4,3 +4,4 @@ pub mod object;
 
 pub use ast::*;
 pub use object::*;
+pub use error::*;

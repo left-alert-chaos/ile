@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{Object, Variable, TokenType, Token};
+use crate::{Object, TokenType, Token};
 
 use std::collections::HashMap;
 
