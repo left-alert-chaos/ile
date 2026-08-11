@@ -92,6 +92,12 @@ pub enum TokenType {
     /// A token for reversing a boolean value (!)
     Not,
 
+    /// A token for a logical and gate (&&)
+    And,
+
+    /// A token for a logical or gate (||)
+    Or,
+
     /// A token for string literals
     String(String),
 
@@ -134,6 +140,8 @@ impl fmt::Display for TokenType {
             Self::Equality => "Equality (double equals sign)".to_string(),
             Self::NotEqualTo => "NotEqualTo".to_string(),
             Self::Not => "Not".to_string(),
+            Self::And => "And".to_string(),
+            Self::Or => "Or".to_string(),
             Self::String(s) => format!("String '{s}'"),
             Self::Integer(i) => format!("Integer {i}"),
             Self::Float(f) => format!("Float {f}"),
@@ -148,7 +156,11 @@ impl fmt::Display for TokenType {
 impl TokenType {
     /// Determine if the token is logical operator
     pub fn is_operator(&self) -> bool {
-        matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo)
+        matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo | Self::And | Self::Or)
+    }
+
+    pub fn is_boolean_operator(&self) -> bool {
+        matches!(self, Self::And | Self::Or)
     }
 
     /// Determine if two tokens have the same TokenType (ignoring inner values)
@@ -208,6 +220,8 @@ impl TokenType {
             "<=" => return Ok(Self::LessThanOrEqualTo),
             "==" => return Ok(Self::Equality),
             "!=" => return Ok(Self::NotEqualTo),
+            "&&" => return Ok(Self::And),
+            "||" => return Ok(Self::Or),
             "false" => return Ok(Self::Boolean(false)),
             "true" => return Ok(Self::Boolean(true)),
             _ => {}
