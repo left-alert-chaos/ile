@@ -105,4 +105,22 @@ mod tests {
         }";
         test_build(code);
     }
+
+    #[test]
+    fn parse_import() {
+        let code = "import \"module.il\";";
+        test_build(code);
+    }
+
+    #[test]
+    fn parse_datatype() {
+        let code = "datatype DataType {
+            let attr1 = 3;
+            let attr2 = \"string\";
+            let method1 = () {
+                println(\"hello\");
+            };
+        }";
+        test_build(code);
+    }
 }
