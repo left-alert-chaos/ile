@@ -14,7 +14,7 @@ pub struct Error {
     message: String,
     location: PipelineLocation,
     file: String,
-    line: Option<u64>,
+    token: Option<Token>,
 }
 
 impl fmt::Display for Error {
@@ -32,35 +32,39 @@ impl fmt::Debug for Error {
 impl Error {
     /// Create an `Error` in the parsing pipeline stage with the given message and token
     pub fn new_parsing(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
-        let mut message = message.to_string();
-        let line;
-        if let Some(token) = token {
-            line = Some(token.line);
-            message.push_str(format!("\nat token {}", token.ttype).as_str());
-        } else {
-            line = None;
-        }
-
         Self {
-            message,
+            message: message.to_string(),
             location: PipelineLocation::Parsing,
             file: file.to_string(),
-            line,
+            token,
+        }
+    }
+
+    /// Create an `Error` in the walking/executing pipline stage with the given message and token
+    pub fn new_runtime(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
+        Self {
+            message: message.to_string(),
+            location: PipelineLocation::Runtime,
+            file: file.to_string(),
+            token,
         }
     }
 
     /// Create a detailed error message including location, type, and reason.
     pub fn format(&self) -> String {
         let line;
-        if let Some(line_num) = self.line {
-            line = format!("{line_num}");
+        let location_token;
+        if let Some(token) = self.token.clone() {
+            line = format!("{}", token.line);
+            location_token = format!("{:?}", token.ttype);
         } else {
             line = String::from("unknown");
+            location_token = String::from("unknown");
         }
 
         format!(
-            "{} error at line {} in file {}:\n{}",
-            self.location, line, self.file, self.message,
+            "{} error at line {} in file {}:\n{}\nnear token {}",
+            self.location, line, self.file, self.message, location_token,
         )
     }
 }
