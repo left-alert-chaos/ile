@@ -83,7 +83,6 @@ pub enum NodeType<'a> {
     Root {
         name: String,
         stack: ScopeStack<'a>,
-        imports: Children<'a>,    // children should be Root
         statements: Children<'a>, // holds executable children, so Chains and Assigments
     },
 
@@ -111,7 +110,6 @@ impl<'a> Node<'a>{
             ntype: NodeType::Root {
                 name,
                 stack: ScopeStack::new(),
-                imports: Vec::new(),
                 statements: Vec::new(),
             }
         }
@@ -119,7 +117,7 @@ impl<'a> Node<'a>{
 
     /// Add a child to a `Node<'a>Type::Root` and panic if the called node isn't a `Root`
     pub fn root_add_child(&mut self, child: Self) {
-        let NodeType::Root { name, stack, imports, mut statements } = self.ntype.clone() else {
+        let NodeType::Root { name, stack, mut statements } = self.ntype.clone() else {
             panic!("tried to call root_add_child on a non-root node!");
         };
 
@@ -128,7 +126,6 @@ impl<'a> Node<'a>{
         self.ntype = NodeType::Root {
             name: name.clone(),
             stack: stack.clone(),
-            imports: imports.clone(),
             statements: statements.clone()
         };
     }
