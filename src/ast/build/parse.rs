@@ -334,6 +334,43 @@ impl<'a> Parser {
         )
     }
 
+    /// Responsible for parsing comparisons and operators
+    // The chain is the expression before it was determined to be an operator
+    fn parse_operator(&mut self, chain: Vec<Node<'a>>) -> Result<Node<'a>, Error> {
+        let mut token = self.current().unwrap();
+
+        // create chain node
+        let mut first_arm = Node {
+            token: Some(token.clone()),
+            ntype: NodeType::Chain(chain),
+        };
+
+        let mut second_expression = self.parse_individual_node()?;
+
+        // change child operator if it takes precedence (no way that's spelled right)
+        if let NodeType::Operator(second_operator, second_operator_arm1, second_operator_arm2) = second_expression.clone().ntype
+        && (second_operator.is_boolean_operator() && !token.clone().ttype.is_boolean_operator()) {
+            // move the previous operator into the first arm, as well as the first arm of the second
+            // operator
+            let new_first_arm = Node {
+                token: Some(token.clone()),
+                ntype: NodeType::Operator(token.clone().ttype, Box::new(first_arm.clone()), second_operator_arm1),
+            };
+            first_arm = new_first_arm;
+            
+            // take the token from the second operator and expand it
+            token = second_expression.clone().token.unwrap();
+            second_expression = *second_operator_arm2;
+        }
+
+        Ok(
+            Node {
+                token: Some(token.clone()),
+                ntype: NodeType::Operator(token.ttype, Box::new(first_arm), Box::new(second_expression)),
+            }
+        )
+    }
+
     /// Parse a non-keyword
     fn parse_misc(&mut self, word: Option<String>) -> Result<Node<'a>, Error> {
         // non-keywords are always paths to something else, so read the path
@@ -372,7 +409,8 @@ impl<'a> Parser {
                             path.clear(); //paving the way lol
                         }
 
-                        chain.push(Node { ntype: NodeType::Operator(token.ttype.clone()), token: Some(token) });
+                        //chain.push(Node { ntype: NodeType::Operator(token.ttype.clone()), token: Some(token) });
+                        return self.parse_operator(chain);
                     } else if let Ok(obj) = Object::from_token(token.clone()) {
                         chain.push(Node { ntype: NodeType::Literal(obj), token: Some(token) });
                     } else {

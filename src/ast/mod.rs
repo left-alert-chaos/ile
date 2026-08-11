@@ -4,7 +4,7 @@
 pub mod build;
 pub mod node;
 pub mod scope;
-mod walk;
+//mod walk;
 
 pub use build::*;
 pub use node::*;

@@ -30,7 +30,7 @@ pub enum NodeType<'a> {
     },
 
     /// Represents a logic operator (addition, subtraction, comparisons, etc)
-    Operator(TokenType),
+    Operator(TokenType, Box<Node<'a>>, Box<Node<'a>>),
 
     /// Represents functions
     CodeBlock {

@@ -3,6 +3,11 @@ use std::time::Instant;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
+    if args.contains(&String::from("-i")) {
+        println!("Objects are {} bytes. Nodes are {} bytes.", size_of::<ile::Object>(), size_of::<ile::Node>());
+        return;
+    }
+
     if args.len() < 2 {
         eprintln!("ile: no arguments were given");
     } else {
