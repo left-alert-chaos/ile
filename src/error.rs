@@ -10,6 +10,7 @@ use crate::*;
 /// # Error
 /// This type represents an issue with tokenization, parsing, or execution. It is often returned
 /// inside an `Err(Error)`.
+#[derive(Clone)]
 pub struct Error {
     pub message: String,
     pub location: PipelineLocation,

@@ -34,7 +34,7 @@ pub enum Object<'a> {
     Function(Executable<'a>),
 
     /// Holds a dynamic value that has a type, attributes, and methods.
-    Data(HashMap<&'a str, Object<'a>>),
+    Data(HashMap<String, Object<'a>>),
 
     /// Primitive number type
     Integer(i64),
@@ -64,7 +64,7 @@ impl<'a> Object<'a> {
     }
 
     /// Determine if the object is data and return related info if it is.
-    pub fn data<'b>(&'b self) -> Option<HashMap<&'b str, Object<'b>>>
+    pub fn data<'b>(&'b self) -> Option<HashMap<String, Object<'b>>>
     where
         'b: 'a,
     {
