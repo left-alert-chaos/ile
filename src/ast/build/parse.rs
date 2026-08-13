@@ -40,7 +40,7 @@ impl<'a> Parser {
     fn parse_individual_node(&mut self) -> Result<Node<'a>, Error> {
         //Extract first token's info
         let Some(token) = self.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF", self.fname.as_str()));
+            return Err(Error::new_parsing(None, "unexpected EOF"));
         };
 
         match token.ttype {
@@ -67,7 +67,6 @@ impl<'a> Parser {
             return Err(Error::new_parsing(
                 Some(token.clone()),
                 "expected word",
-                self.fname.as_str(),
             ));
         };
 
@@ -94,7 +93,7 @@ impl<'a> Parser {
                 TokenType::Word(w) => signature.push(w),
                 TokenType::Comma => {}
                 TokenType::CloseParen => break,
-                _ => return Err(Error::new_parsing(Some(token.clone()), format!("unexpected {} token while parsing function signature; expected Comma, CloseParen, or Word", token.ttype), self.fname.clone())),
+                _ => return Err(Error::new_parsing(Some(token.clone()), format!("unexpected {} token while parsing function signature; expected Comma, CloseParen, or Word", token.ttype))),
             }
         }
 
@@ -187,7 +186,7 @@ impl<'a> Parser {
         // consume CloseBrace or EOF?
         match self.peek_next() {
             Some(_) => self.index += 1,
-            None => return Err(Error::new_parsing(None, "unexpected EOF while parsing block", self.fname.clone())),
+            None => return Err(Error::new_parsing(None, "unexpected EOF while parsing block")),
         }
 
         Ok(
@@ -208,10 +207,10 @@ impl<'a> Parser {
 
         // get name
         let Some(next) = self.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF while parsing datatype", self.fname.clone()));
+            return Err(Error::new_parsing(None, "unexpected EOF while parsing datatype"));
         };
         let TokenType::Word(name) = next.ttype else {
-            return Err(Error::new_parsing(Some(next.clone()), format!("expected Word while parsing datatype name;\nfound {}", next.ttype), self.fname.clone()))
+            return Err(Error::new_parsing(Some(next.clone()), format!("expected Word while parsing datatype name;\nfound {}", next.ttype)))
         };
 
         self.expect_single_char(TokenType::OpenBrace, "while parsing datatype definition")?;
@@ -221,15 +220,15 @@ impl<'a> Parser {
             let assignment = self.parse_individual_node()?;
 
             let NodeType::Assignment { path, value, create } = assignment.ntype else {
-                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions", self.fname.clone()))
+                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions"))
             };
 
             if !create {
-                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions. Help: add let", self.fname.clone()))
+                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions. Help: add let"))
             }
 
             if path.len() != 1 {
-                return Err(Error::new_parsing(Some(self.current().unwrap()), "only local assignments are allowed inside datatype definitions", self.fname.clone()));
+                return Err(Error::new_parsing(Some(self.current().unwrap()), "only local assignments are allowed inside datatype definitions"));
             }
 
             // determine where to put value
@@ -240,7 +239,7 @@ impl<'a> Parser {
                 NodeType::Literal(_) | NodeType::Call { .. } => {
                     attributes.insert(path[0].clone(), *value);
                 }
-                _ => return Err(Error::new_parsing(Some(self.current().unwrap()), "only functions, calls, and literals can be assigned inside datatype definitions", self.fname.clone())),
+                _ => return Err(Error::new_parsing(Some(self.current().unwrap()), "only functions, calls, and literals can be assigned inside datatype definitions")),
             }
         }
 
@@ -416,7 +415,7 @@ impl<'a> Parser {
                         chain.push(Node { ntype: NodeType::Literal(obj), token: Some(token) });
                     } else {
                         return Err(
-                            Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype), self.fname.clone())
+                            Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype))
                         );
                     }
                 }
@@ -433,10 +432,10 @@ impl<'a> Parser {
 
     fn parse_import(&mut self) -> Result<Node<'a>, Error> {
         let Some(token) = self.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF while parsing import", self.fname.clone()));
+            return Err(Error::new_parsing(None, "unexpected EOF while parsing import"));
         };
         let TokenType::String(modname) = token.clone().ttype else {
-            return Err(Error::new_parsing(Some(token.clone()), format!("import names must be Strings, not {}", token.clone().ttype).as_str(), self.fname.clone()));
+            return Err(Error::new_parsing(Some(token.clone()), format!("import names must be Strings, not {}", token.clone().ttype).as_str()));
         };
 
         self.expect_single_char(TokenType::ChainEnd, "while parsing import")?;
@@ -459,14 +458,12 @@ impl<'a> Parser {
             return Err(Error::new_parsing(
                 None,
                 "unexpected EOF (expected word token)",
-                self.fname.clone(),
             ));
         };
         let TokenType::Word(word) = word.ttype.clone() else {
             return Err(Error::new_parsing(
                 Some(word.clone()),
                 format!("{message} (Word token);\nfound {}", word.ttype),
-                self.fname.clone(),
             ));
         };
 
@@ -486,7 +483,6 @@ impl<'a> Parser {
             return Err(Error::new_parsing(
                 None,
                 format!("unexpected EOF (expected {token_type} token) {message}"),
-                self.fname.clone(),
             ));
         };
         if token.ttype != token_type {
@@ -496,7 +492,6 @@ impl<'a> Parser {
                     "expected {token_type} token {message};\nfound {}",
                     token.ttype
                 ),
-                self.fname.clone(),
             ))
         } else {
             Ok(())

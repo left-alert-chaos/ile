@@ -19,12 +19,12 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, Error> {
 
     let chars = match std::fs::read(&path) {
         Ok(text) => text,
-        Err(_) => return Err(Error::new_parsing(None, format!("couldn't locate module '{path}'"), path)),
+        Err(_) => return Err(Error::new_parsing(None, format!("couldn't locate module '{path}'"))),
     };
 
     let text = match String::from_utf8(chars) {
         Ok(text) => text,
-        Err(_) => return Err(Error::new_parsing(None, format!("couldn't read module '{path}' as utf-8"), path)),
+        Err(_) => return Err(Error::new_parsing(None, format!("couldn't read module '{path}' as utf-8"))),
     };
 
     let tokens = tokenize(text, Some(path.clone()))?;

@@ -277,7 +277,10 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
         // Attempt to tokenize buffer
         match Token::from(b.clone(), line, file.clone()) {
             Ok(token) => tokens.push(token),
-            Err(reason) => return Err(reason),
+            Err(reason) => {
+                println!("Returning error from tokenize()");
+                return Err(reason);
+            }
         }
         b.clear();
         Ok(())

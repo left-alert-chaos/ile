@@ -31,7 +31,11 @@ impl fmt::Debug for Error {
 
 impl Error {
     /// Create an `Error` in the parsing pipeline stage with the given message and token
-    pub fn new_parsing(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
+    pub fn new_parsing(token: Option<Token>, message: impl ToString) -> Self {
+        let mut file = String::from("unknown");
+        if let Some(token) = token.clone() {
+            file = token.file.unwrap_or(String::from("unknown"));
+        };
         Self {
             message: message.to_string(),
             location: PipelineLocation::Parsing,
@@ -41,11 +45,15 @@ impl Error {
     }
 
     /// Create an `Error` in the walking/executing pipline stage with the given message and token
-    pub fn new_runtime(token: Option<Token>, message: impl ToString, file: impl ToString) -> Self {
+    pub fn new_runtime(token: Option<Token>, message: impl ToString) -> Self {
+        let mut file = String::from("unknown");
+        if let Some(token) = token.clone() {
+            file = token.file.unwrap_or(String::from("unknown"));
+        }
         Self {
             message: message.to_string(),
             location: PipelineLocation::Runtime,
-            file: file.to_string(),
+            file,
             token,
         }
     }
