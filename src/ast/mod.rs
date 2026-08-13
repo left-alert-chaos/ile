@@ -125,4 +125,14 @@ mod tests {
         }";
         test_build(code);
     }
+
+    #[test]
+    fn parse_array() {
+        let code = r#"let arr = [
+            5,
+            "a string if you want",
+            func(),
+        ];"#;
+        test_build(code);
+    }
 }

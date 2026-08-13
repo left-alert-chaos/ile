@@ -11,7 +11,6 @@ pub struct Parser {
     index: usize,
     tokens: Vec<Token>,
     started: bool,
-    fname: String,
 }
 
 impl<'a> Parser {
@@ -19,13 +18,12 @@ impl<'a> Parser {
     /// Nesting happens by storing a parent and child node. The parser creates a child node and
     /// calls the parent's `add_child()` method to appropriately store the new node.
     pub fn build_root(tokens: Vec<Token>, fname: String) -> Result<Node<'a>, Error> {
-        let mut root = Node::new_root(fname.clone());
+        let mut root = Node::new_root(fname);
 
         let mut parser = Self {
             tokens,
             index: 0,
             started: false,
-            fname,
         };
 
         while parser.peek_next().is_some() {
@@ -46,6 +44,7 @@ impl<'a> Parser {
         match token.ttype {
             TokenType::OpenParen => return self.parse_function(),
             TokenType::OpenBrace => return self.parse_block(),
+            TokenType::OpenBracket => return self.parse_array(),
             _ => {}
         }
 
@@ -104,7 +103,7 @@ impl<'a> Parser {
         match self.parse_block() {
             Ok(Node { ntype: NodeType::CodeBlock { chains, .. }, .. }) => {
                 Ok(
-                    Node { ntype: NodeType::CodeBlock { chains, signature }, token: Some(self.current().unwrap()) }
+                    Node { ntype: NodeType::CodeBlock { chains, signature }, token: self.current() }
                 )
             }
             Err(e) => Err(e),
@@ -133,7 +132,7 @@ impl<'a> Parser {
                     block: Box::new(block),
                     else_clause,
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }
@@ -152,7 +151,7 @@ impl<'a> Parser {
                     condition: Box::new(condition),
                     block: Box::new(block),
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }
@@ -170,7 +169,7 @@ impl<'a> Parser {
                     condition: Box::new(condition),
                     block: Box::new(block),
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }
@@ -195,7 +194,31 @@ impl<'a> Parser {
                     chains,
                     signature: Vec::new(),
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
+            }
+        )
+    }
+
+    // parse an array declaration (stuff in [])
+    fn parse_array(&mut self) -> Result<Node<'a>, Error> {
+        let mut children = Vec::new();
+
+        while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBracket {
+            children.push(self.parse_individual_node()?);
+
+            // consume comma if there is one
+            if let Some(token) = self.peek_next() && token.ttype == TokenType::Comma {
+                self.index += 1;
+            }
+        };
+
+        // consume CloseBracket
+        self.expect_single_char(TokenType::CloseBracket, "while ending array literal")?;
+
+        Ok(
+            Node {
+                token: self.current(),
+                ntype: NodeType::ArrayLiteral(children),
             }
         )
     }
@@ -220,15 +243,15 @@ impl<'a> Parser {
             let assignment = self.parse_individual_node()?;
 
             let NodeType::Assignment { path, value, create } = assignment.ntype else {
-                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions"))
+                return Err(Error::new_parsing(self.current(), "only let statements are allowed inside datatype definitions"))
             };
 
             if !create {
-                return Err(Error::new_parsing(Some(self.current().unwrap()), "only let statements are allowed inside datatype definitions. Help: add let"))
+                return Err(Error::new_parsing(self.current(), "only let statements are allowed inside datatype definitions. Help: add let"))
             }
 
             if path.len() != 1 {
-                return Err(Error::new_parsing(Some(self.current().unwrap()), "only local assignments are allowed inside datatype definitions"));
+                return Err(Error::new_parsing(self.current(), "only local assignments are allowed inside datatype definitions"));
             }
 
             // determine where to put value
@@ -239,13 +262,13 @@ impl<'a> Parser {
                 NodeType::Literal(_) | NodeType::Call { .. } => {
                     attributes.insert(path[0].clone(), *value);
                 }
-                _ => return Err(Error::new_parsing(Some(self.current().unwrap()), "only functions, calls, and literals can be assigned inside datatype definitions")),
+                _ => return Err(Error::new_parsing(self.current(), "only functions, calls, and literals can be assigned inside datatype definitions")),
             }
         }
 
         self.expect_single_char(TokenType::CloseBrace, "while parsing end of datatype definition")?;
 
-        Ok(Node { ntype: NodeType::DataType { name, methods, attributes }, token: Some(self.current().unwrap())})
+        Ok(Node { ntype: NodeType::DataType { name, methods, attributes }, token: self.current()})
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {
@@ -274,7 +297,7 @@ impl<'a> Parser {
                     value: Box::new(value),
                     create: true
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }
@@ -293,7 +316,7 @@ impl<'a> Parser {
                     value: Box::new(value),
                     create: false,
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }
@@ -329,7 +352,7 @@ impl<'a> Parser {
                     arguments: children,
                     path,
                 },
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }
@@ -425,7 +448,7 @@ impl<'a> Parser {
         Ok(
             Node {
                 ntype: NodeType::Chain(chain),
-                token: Some(self.current().unwrap()),
+                token: self.current(),
             }
         )
     }

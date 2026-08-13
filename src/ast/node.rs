@@ -92,6 +92,9 @@ pub enum NodeType<'a> {
     /// Represents a literal declaration
     Literal(Object<'a>),
 
+    /// Represents an array literal (child nodes within brackets)
+    ArrayLiteral(Children<'a>),
+
     /// Represents an `import` statement
     Import(String),
 }

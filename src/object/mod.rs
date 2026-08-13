@@ -1,5 +1,5 @@
 //! # Object
-//! This module holds code having to do with Ile objects- functions, primitives, methods, and data.
+//! This module holds code having to do with Ile objects- functions, primitives, and data.
 //! These are classifications, which are distinct from types. A type is a way of classifying data
 //! objects.
 //!
@@ -13,8 +13,9 @@
 //! hold other objects. It is stored as a `HashMap` of attributes.
 //!
 //! # Primitive types
-//! There are 4 primitive types: `Integer`, `Float`, `Boolean`, and `String`. They are thin wrappers
-//! around Rust types and have no methods. To interact with them, you must use external functions.
+//! There are 5 primitive types: `Integer`, `Float`, `Boolean`, `Array`, and `String`. They are
+//! thin wrappers around Rust types and have no methods. To interact with them, you must use external
+//! functions.
 
 pub mod data;
 pub use data::DataType;
@@ -46,6 +47,9 @@ pub enum Object<'a> {
 
     /// Primitive string type
     String(String),
+
+    /// Primitive array type
+    Array(Vec<Self>),
 }
 
 impl<'a> Object<'a> {
@@ -107,6 +111,16 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if the object is an Array and return a reference to underlying `Vec<Object>` if it
+    /// is.
+    pub fn array(&'a self) -> Option<&'a Vec<Object<'a>>> {
+        if let Self::Array(a) = self {
+            Some(a)
+        } else {
+            None
+        }
+    }
+
     /// Determine if this Object has the same classification as the other object. This doesn't
     /// compare `DataType`s or underlying values, just classifications.
     pub fn has_same_classification_as<'b>(&'b self, other: &'b Self) -> bool
@@ -119,6 +133,7 @@ impl<'a> Object<'a> {
             || self.data().is_some() && other.data().is_some()
             || self.boolean().is_some() && other.boolean().is_some()
             || self.string().is_some() && other.string().is_some()
+            || self.array().is_some() && other.array().is_some()
     }
 
     /// Attempt to create a primitive `Object` from a `Token`
