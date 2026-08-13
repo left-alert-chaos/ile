@@ -81,23 +81,34 @@ impl<'a> ScopeStack<'a> {
     /// Similar to `lookup()`, but follow a path. It returns a mutable reference to an object that
     /// it got by reading attributes of objects in the path.
     /// For use in the AST walker.
-    pub fn path_lookup(&mut self, path: &Vec<String>, token: &Token) -> Result<&mut Variable<'a>, IleError> {
+    pub fn path_lookup(&mut self, path: &Vec<String>, token: &Token) -> Result<&mut Object<'a>, IleError> {
         if path.is_empty() {
             return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
         }
 
         // get the top-level object that everything else is an attribute of
         let first = match self.lookup(&path[0]) {
-            Some(first) => first,
+            Some(Variable::Var { value, .. }) => value,
             None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),
+            _ => unreachable!(),
         };
         if path.len() == 1 {
             return Ok(first);
         }
 
         let mut target = first;
+        let mut target_name = &path[0];
         for segment in &path[1..] {
+            // check if target is data
+            let Object::Data(attributes) = target else {
+                return Err(IleError::new_runtime(Some(token.clone()), format!("object '{target_name}' isn't Data")));
+            };
 
+            target_name = segment;
+            match attributes.get_mut(segment.as_str()) {
+                Some(t) => target = t,
+                None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{target_name}' doesn't exist"))),
+            }
         }
 
         Ok(target)
