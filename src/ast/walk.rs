@@ -12,15 +12,25 @@ pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
 impl<'a> Node<'a> {
     /// Execute the node.
     pub fn walk(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        match self.ntype {
+        println!("Walking node");
+        match self.ntype.clone() {
             NodeType::Assignment { .. } => self.walk_assignment(stack),
             NodeType::Import(_) => self.walk_import(stack),
-            _ => {Ok(None)}
+            NodeType::Root { statements, .. } => {
+                for mut statement in statements {
+                    statement.walk(stack)?;
+                }
+                Ok(None)
+            }
+            NodeType::Literal(value) => Ok(Some(value)),
+            NodeType::ArrayLiteral(_) => self.walk_array(stack),
+            _ => Ok(None)
         }
     }
 
     /// Walk an assignment
     fn walk_assignment(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        println!("Walking assignment");
         let NodeType::Assignment { mut path, mut value, create } = self.ntype.clone() else {
             unreachable!();
         };
@@ -79,10 +89,10 @@ impl<'a> Node<'a> {
         };
 
         // this uses waaaaay too much memory, but it's what I can come up with
-        let NodeType::Root { name, stack, statements } = ast.ntype.clone() else {
+        let NodeType::Root { name, mut stack, statements } = ast.ntype.clone() else {
             unreachable!();
         };
-        ast.walk(self_stack)?;
+        ast.walk(&mut stack)?;
         ast = Node {
             token: None,
             ntype: NodeType::Root {
@@ -96,6 +106,23 @@ impl<'a> Node<'a> {
         self_stack.push(var);
 
         Ok(None)
+    }
+
+    fn walk_array(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::ArrayLiteral(children) = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        let mut results = Vec::new();
+
+        for mut child in children {
+            match child.walk(stack)? {
+                Some(res) => results.push(res),
+                None => return Err(Error::new_runtime(child.token.clone(), "array child doesn't return anything")),
+            }
+        }
+
+        Ok(Some(Object::Array(results)))
     }
 }
 
