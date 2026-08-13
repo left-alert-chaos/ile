@@ -24,6 +24,7 @@ impl<'a> Node<'a> {
             }
             NodeType::Literal(value) => Ok(Some(value)),
             NodeType::ArrayLiteral(_) => self.walk_array(stack),
+            NodeType::CodeBlock { .. } => Ok(Some(Object::Function(Executable::CodeBlock(Box::new(self.clone()))))),
             _ => Ok(None)
         }
     }
