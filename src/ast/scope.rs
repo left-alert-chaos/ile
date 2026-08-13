@@ -4,6 +4,7 @@
 //! swap out your scopes dynamically, which this module provides.
 
 use crate::*;
+use crate::error::Error as IleError;
 
 use std::{error::Error, fmt};
 
@@ -75,6 +76,31 @@ impl<'a> ScopeStack<'a> {
         }
 
         None
+    }
+
+    /// Similar to `lookup()`, but follow a path. It returns a mutable reference to an object that
+    /// it got by reading attributes of objects in the path.
+    /// For use in the AST walker.
+    pub fn path_lookup(&mut self, path: &Vec<String>, token: &Token) -> Result<&mut Variable<'a>, IleError> {
+        if path.is_empty() {
+            return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
+        }
+
+        // get the top-level object that everything else is an attribute of
+        let first = match self.lookup(&path[0]) {
+            Some(first) => first,
+            None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),
+        };
+        if path.len() == 1 {
+            return Ok(first);
+        }
+
+        let mut target = first;
+        for segment in &path[1..] {
+
+        }
+
+        Ok(target)
     }
 
     /// In reversed order, count through scopes and remove the specified number. These scopes,
