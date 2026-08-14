@@ -237,7 +237,6 @@ impl<'a> Parser {
 
     // parse let statements inside a `datatype` block
     fn parse_datatype(&mut self) -> Result<Node<'a>, Error> {
-        let mut methods = HashMap::new();
         let mut attributes = HashMap::new();
 
         // get name
@@ -268,10 +267,7 @@ impl<'a> Parser {
 
             // determine where to put value
             match value.ntype {
-                NodeType::CodeBlock { .. } => {
-                    methods.insert(path[0].clone(), *value);
-                }
-                NodeType::Literal(_) | NodeType::Call { .. } => {
+                NodeType::Literal(_) | NodeType::Call { .. } | NodeType::CodeBlock { .. } => {
                     attributes.insert(path[0].clone(), *value);
                 }
                 _ => return Err(Error::new_parsing(self.current(), "only functions, calls, and literals can be assigned inside datatype definitions")),
@@ -280,7 +276,7 @@ impl<'a> Parser {
 
         self.expect_single_char(TokenType::CloseBrace, "while parsing end of datatype definition")?;
 
-        Ok(Node { ntype: NodeType::DataType { name, methods, attributes }, token: self.current()})
+        Ok(Node { ntype: NodeType::DataType { name, attributes }, token: self.current()})
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {

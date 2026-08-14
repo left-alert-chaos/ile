@@ -59,7 +59,6 @@ pub enum NodeType<'a> {
     /// are only usable at runtime
     DataType {
         name: String,
-        methods: HashMap<String, Node<'a>>,
         attributes: HashMap<String, Node<'a>>,
     },
 
