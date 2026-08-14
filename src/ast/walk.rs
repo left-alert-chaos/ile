@@ -57,7 +57,9 @@ impl<'a> Node<'a> {
             unreachable!();
         };
 
-        let name = path[0].clone();
+        let Some(name) = path.pop() else {
+            return Err(Error::new_runtime(self.token.clone(), "can't assign to empty path"));
+        };
 
         let walk_res = match value.walk(stack)? {
             Some(res) => res,
@@ -66,6 +68,7 @@ impl<'a> Node<'a> {
 
         if path.is_empty() {
             if create {
+                path.push(name);
                 stack.set_path(&path, walk_res, &self.token.clone().unwrap())?;
             } else {
                 if let Ok(variable) = stack.path_lookup(&mut path, &self.token.clone().unwrap()) {
@@ -88,7 +91,6 @@ impl<'a> Node<'a> {
     }
 
     fn walk_import(&self, self_stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        println!("Walking import");
         let NodeType::Import(path) = self.ntype.clone() else {
             unreachable!();
         };
@@ -140,7 +142,6 @@ impl<'a> Node<'a> {
     }
 
     fn walk_call(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        println!("Walking call");
         let NodeType::Call { mut arguments, path } = self.ntype.clone() else {
             unreachable!();
         };
@@ -171,7 +172,6 @@ impl<'a> Node<'a> {
     }
 
     fn walk_block(&self, mut args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>) -> FunctionResult<'a> {
-        println!("Walking block");
         let path = path.clone();
         let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
             unreachable!();
@@ -240,7 +240,6 @@ impl<'a> Node<'a> {
             statement.walk(stack)?;
 
             if let Some(value) = stack.is_return() {
-                println!("Returning {value:?}");
                 return_value = value;
                 break;
             }
