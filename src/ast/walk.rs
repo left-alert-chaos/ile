@@ -26,6 +26,11 @@ impl<'a> Node<'a> {
             NodeType::ArrayLiteral(_) => self.walk_array(stack),
             NodeType::CodeBlock { .. } => Ok(Some(Object::Function(Executable::CodeBlock(Box::new(self.clone()))))),
             NodeType::Call { .. } => self.walk_call(stack),
+            NodeType::Return(mut value) => {
+                let value = value.walk(stack)?;
+                stack.push(Variable::Return(value));
+                Ok(None)
+            }
             _ => Ok(None)
         }
     }
