@@ -87,6 +87,7 @@ impl<'a> ScopeStack<'a> {
         }
 
         // get the top-level object that everything else is an attribute of
+        //FIXME: Search in modules
         let first = match self.lookup(&path[0]) {
             Some(Variable::Var { value, .. }) => value,
             None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),

@@ -12,7 +12,6 @@ pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
 impl<'a> Node<'a> {
     /// Execute the node.
     pub fn walk(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        println!("Walking node");
         match self.ntype.clone() {
             NodeType::Assignment { .. } => self.walk_assignment(stack),
             NodeType::Import(_) => self.walk_import(stack),
@@ -31,13 +30,29 @@ impl<'a> Node<'a> {
                 stack.push(Variable::Return(value));
                 Ok(None)
             }
+            NodeType::Chain(_) => self.walk_chain(stack),
             _ => Ok(None)
         }
     }
 
+    fn walk_chain(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        // value carried between chained methods
+        let mut carried_value = None;
+
+        let NodeType::Chain(calls) = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        // FIXME: This should scan carried_value's attributes for the method name
+        for mut call in calls {
+            carried_value = call.walk(stack)?;
+        }
+
+        Ok(carried_value)
+    }
+
     /// Walk an assignment
     fn walk_assignment(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        println!("Walking assignment");
         let NodeType::Assignment { mut path, mut value, create } = self.ntype.clone() else {
             unreachable!();
         };
@@ -65,7 +80,7 @@ impl<'a> Node<'a> {
                 if let Some(entry) = stack.lookup(&name) {
                     *entry = var;
                 } else {
-                    return Err(Error::new_runtime(self.token.clone(), format!("can't rea-assign to variable '{name}' that doesn't exist")));
+                    return Err(Error::new_runtime(self.token.clone(), format!("can't re-assign to variable '{name}' that doesn't exist")));
                 }
             }
         } else {
@@ -193,6 +208,17 @@ impl<'a> Node<'a> {
                 )
             )
         );
+
+        // clone arguments onto stack
+        for (index, arg) in args.iter().enumerate() {
+            let name = signature[index].clone();
+            stack.push(
+                Variable::Var {
+                    name,
+                    value: arg.clone(),
+                }
+            );
+        }
 
         let mut return_value = None;
 
