@@ -25,6 +25,7 @@ impl<'a> Node<'a> {
             NodeType::Literal(value) => Ok(Some(value)),
             NodeType::ArrayLiteral(_) => self.walk_array(stack),
             NodeType::CodeBlock { .. } => Ok(Some(Object::Function(Executable::CodeBlock(Box::new(self.clone()))))),
+            NodeType::Call { .. } => self.walk_call(stack),
             _ => Ok(None)
         }
     }
@@ -66,7 +67,7 @@ impl<'a> Node<'a> {
             // assign as an attribute
             let obj = stack.path_lookup(&path, &self.token.clone().unwrap())?;
             let Object::Data(attrs) = obj else {
-                return Err(Error::new_runtime(self.token.clone(), format!("can't assign attribute to non-data object '{}{name}'", debug_path(&path))));
+                return Err(Error::new_runtime(self.token.clone(), format!("can't assign attribute to non-data object '{}.{name}'", debug_path(&path))));
             };
             attrs.insert(name, walk_res);
             *obj = Object::Data(attrs.clone());
@@ -76,6 +77,7 @@ impl<'a> Node<'a> {
     }
 
     fn walk_import(&self, self_stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        println!("Walking import");
         let NodeType::Import(path) = self.ntype.clone() else {
             unreachable!();
         };
@@ -125,6 +127,85 @@ impl<'a> Node<'a> {
 
         Ok(Some(Object::Array(results)))
     }
+
+    fn walk_call(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        println!("Walking call");
+        let NodeType::Call { mut arguments, path } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        // collect objects from node arguments
+        let mut arg_objects = Vec::new();
+        for (index, arg) in arguments.iter_mut().enumerate() {
+            match arg.walk(stack)? {
+                Some(obj) => arg_objects.push(obj),
+                None => return Err(Error::new_runtime(arg.token.clone(), format!("argument {index} didn't return anything"))),
+            }
+        }
+
+        // get function
+        let func = stack.path_lookup(&path, &self.token.clone().unwrap())?;
+        let Object::Function(executable) = func.clone() else {
+            return Err(Error::new_runtime(self.token.clone(), format!("object '{}' isn't a Function", debug_path(&path))));
+        };
+
+        match executable {
+            Executable::CodeBlock(block) => {
+                block.walk_block(arg_objects, stack, &path)
+            }
+            Executable::Wrapper { signature, func } => {
+                func(signature)
+            }
+        }
+    }
+
+    fn walk_block(&self, args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>) -> FunctionResult<'a> {
+        println!("Walking block");
+        let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        let args_len = args.len();
+        let signature_len = signature.len();
+
+        // ensure that there are the right number of arguments
+        if args_len != signature_len {
+            let message = if args_len < signature_len {
+                format!("missing {} arguments", signature_len - args_len)
+            } else {
+                format!("{} too many arguments", args_len - signature_len)
+            };
+            return Err(Error::new_runtime(self.token.clone(), message));
+        }
+
+        // add a StackDivider
+        stack.push(
+            Variable::StackDivider( 
+                Some(
+                    ScopeType::Function(
+                        path.clone()
+                    )
+                )
+            )
+        );
+
+        let mut return_value = None;
+
+        for mut statement in chains {
+            statement.walk(stack)?;
+
+            if let Some(value) = stack.is_return() {
+                println!("Returning {value:?}");
+                return_value = value;
+                break;
+            }
+        }
+
+        // Remove variables from function's scope
+        stack.return_cleanup().unwrap();
+
+        Ok(return_value)
+    }
 }
 
 fn debug_path(path: &Vec<String>) -> String {
@@ -134,6 +215,8 @@ fn debug_path(path: &Vec<String>) -> String {
         res.push_str(i.as_str());
         res.push('.');
     }
+
+    res.pop();
 
     res
 }

@@ -175,7 +175,7 @@ impl<'a> ScopeStack<'a> {
         Ok(())
     }
 
-    /// Pop until a `Variable::StackDivider(Some(ScopeType::Function))` is found. Used to remove unused values
+    /// Pop until a `Variable::StackDivider(Some(ScopeType::Function(_)))` is found. Used to remove unused values
     /// after a function returns.
     /// As with all other operations, if it runs out of variables to pop, it restores all of the
     /// impacted vars and returns an `Err()`
@@ -189,9 +189,22 @@ impl<'a> ScopeStack<'a> {
             };
 
             match var {
-                Variable::StackDivider(Some(ScopeType::Function)) => return Ok(()),
+                Variable::StackDivider(Some(ScopeType::Function(_))) => return Ok(()),
                 _ => bin.push(var),
             }
+        }
+    }
+
+    /// Check if the last entry in the stack is a `Variable::Return`. If it is, return the inner
+    /// value of it.
+    pub fn is_return(&mut self) -> Option<Option<Object<'a>>> {
+        let last = self.current_stack.pop().unwrap();
+        if let Variable::Return(value) = last.clone() {
+            self.current_stack.push(last);
+            return Some(value);
+        } else {
+            self.current_stack.push(last);
+            return None;
         }
     }
 
