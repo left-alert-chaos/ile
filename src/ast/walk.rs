@@ -170,11 +170,17 @@ impl<'a> Node<'a> {
         }
     }
 
-    fn walk_block(&self, args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>) -> FunctionResult<'a> {
+    fn walk_block(&self, mut args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>) -> FunctionResult<'a> {
         println!("Walking block");
+        let path = path.clone();
         let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
             unreachable!();
         };
+
+        // find the path to the method's parent
+        let mut self_path = path.clone();
+        self_path.pop();
+        let mut set_self = false;
 
         let args_len = args.len();
         let signature_len = signature.len();
@@ -182,11 +188,28 @@ impl<'a> Node<'a> {
         // ensure that there are the right number of arguments
         if args_len != signature_len {
             let message = if args_len < signature_len {
-                format!("missing {} arguments", signature_len - args_len)
+                // set automatic self value
+                if signature[0].as_str() == "self" && signature_len - args_len == 1 {
+                    // check that this is, in fact, a method
+                    if path.len() > 0 && let Ok(self_object) = stack.path_lookup(&mut self_path.clone(), &self.token.clone().unwrap()) {
+                        set_self = true;
+                        args.insert(
+                            0,
+                            self_object.clone(),
+                        );
+                        String::new()
+                    } else {
+                        format!("missing one argument; the first argument is 'self', which is confusing because this isn't a method")
+                    }
+                } else {
+                    format!("missing {} arguments", signature_len - args_len)
+                }
             } else {
                 format!("{} too many arguments", args_len - signature_len)
             };
-            return Err(Error::new_runtime(self.token.clone(), message));
+            if !message.is_empty() {
+                return Err(Error::new_runtime(self.token.clone(), message));
+            }
         }
 
         // add a StackDivider
@@ -221,6 +244,19 @@ impl<'a> Node<'a> {
                 return_value = value;
                 break;
             }
+        }
+
+        // if it's a method, change the self path to reflect any changes
+        if set_self {
+            let self_value = stack.lookup(&String::from("self")).unwrap();
+            let Variable::Var { value, .. } = self_value.clone() else {
+                return Err(Error::new_runtime(self.token.clone(), format!("method '{}' somehow returned with self as a non-variable stack entry; this is confusing and frustrating and shouldn't even be possible", debug_path(&self_path))));
+            };
+            stack.set_path(
+                &mut self_path,
+                value,
+                &self.token.clone().unwrap(),
+            )?;
         }
 
         // Remove variables from function's scope
