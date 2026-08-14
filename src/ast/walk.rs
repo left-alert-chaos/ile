@@ -57,10 +57,7 @@ impl<'a> Node<'a> {
             unreachable!();
         };
 
-        let name = match path.pop() {
-            Some(name) => name,
-            None => return Err(Error::new_runtime(self.token.clone(), "assignment has no name")),
-        };
+        let name = path[0].clone();
 
         let walk_res = match value.walk(stack)? {
             Some(res) => res,
@@ -68,24 +65,18 @@ impl<'a> Node<'a> {
         };
 
         if path.is_empty() {
-            // assign in the current scope
-            let var = Variable::Var {
-                name: name.clone(),
-                value: walk_res,
-            };
-
             if create {
-                stack.push(var);
+                stack.set_path(&path, walk_res, &self.token.clone().unwrap())?;
             } else {
-                if let Some(entry) = stack.lookup(&name) {
-                    *entry = var;
+                if let Ok(variable) = stack.path_lookup(&mut path, &self.token.clone().unwrap()) {
+                    *variable = walk_res;
                 } else {
                     return Err(Error::new_runtime(self.token.clone(), format!("can't re-assign to variable '{name}' that doesn't exist")));
                 }
             }
         } else {
             // assign as an attribute
-            let obj = stack.path_lookup(&path, &self.token.clone().unwrap())?;
+            let obj = stack.path_lookup(&mut path.clone(), &self.token.clone().unwrap())?;
             let Object::Data(attrs) = obj else {
                 return Err(Error::new_runtime(self.token.clone(), format!("can't assign attribute to non-data object '{}.{name}'", debug_path(&path))));
             };
@@ -164,7 +155,7 @@ impl<'a> Node<'a> {
         }
 
         // get function
-        let func = stack.path_lookup(&path, &self.token.clone().unwrap())?;
+        let func = stack.path_lookup(&mut path.clone(), &self.token.clone().unwrap())?;
         let Object::Function(executable) = func.clone() else {
             return Err(Error::new_runtime(self.token.clone(), format!("object '{}' isn't a Function", debug_path(&path))));
         };

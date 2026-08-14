@@ -56,6 +56,29 @@ impl<'a> ScopeStack<'a> {
         self.push(Variable::Var { name: vname, value });
     }
 
+    /// Search for the object at a given path. Similar to `set()`, but used for objects that aren't
+    /// immediate children.
+    pub fn set_path(&mut self, path: &Vec<String>, value: Object<'a>, token: &Token) -> Result<(), IleError> {
+        let mut path = path.clone();
+        if path.len() == 1 {
+            self.set(path[0].clone(), value);
+            return Ok(());
+        } else if path.is_empty() {
+            // I don't think this is possible, but better safe than sorry.
+            return Err(IleError::new_runtime(Some(token.clone()), "can't assign to empty path"));
+        }
+        
+        // remove last segment and search for parent
+        let child_name = path.pop().unwrap();
+        let parent = self.path_lookup(&mut path, token)?;
+        let Object::Data(mut attrs) = parent.clone() else {
+            return Err(IleError::new_runtime(Some(token.clone()), "non-data objects can't have attributes assigned"));
+        };
+        attrs.insert(child_name, value);
+        *parent = Object::Data(attrs);
+        Ok(())
+    }
+
     /// Push a variable onto the end of the current stack.
     pub fn push(&mut self, var: Variable<'a>) {
         self.current_stack.push(var);
@@ -81,15 +104,29 @@ impl<'a> ScopeStack<'a> {
     /// Similar to `lookup()`, but follow a path. It returns a mutable reference to an object that
     /// it got by reading attributes of objects in the path.
     /// For use in the AST walker.
-    pub fn path_lookup(&mut self, path: &Vec<String>, token: &Token) -> Result<&mut Object<'a>, IleError> {
+    pub fn path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<&mut Object<'a>, IleError> {
         if path.is_empty() {
             return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
         }
 
         // get the top-level object that everything else is an attribute of
-        //FIXME: Search in modules
         let first = match self.lookup(&path[0]) {
             Some(Variable::Var { value, .. }) => value,
+        
+            // If the looked up value is a node, recursively search its stack until you reach an
+            // object
+            Some(Variable::Module(node)) => {
+                let NodeType::Root { stack, .. } = &mut node.ntype else {
+                    unreachable!();
+                };
+                if path.len() > 1 {
+                    path.remove(0);
+                    stack.path_lookup(path, token)?
+                } else {
+                    return Err(IleError::new_runtime(Some(token.clone()), "modules aren't objects"));
+                }
+            }
+
             None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),
             _ => unreachable!(),
         };
