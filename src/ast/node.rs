@@ -29,6 +29,9 @@ pub enum NodeType<'a> {
         path: Path,
     },
 
+    /// Represents a `return` statement
+    Return(Box<Node<'a>>),
+
     /// Represents a logic operator (addition, subtraction, comparisons, etc)
     Operator(TokenType, Box<Node<'a>>, Box<Node<'a>>),
 

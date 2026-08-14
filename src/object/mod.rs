@@ -165,6 +165,9 @@ pub enum Variable<'a> {
 
     /// Represents an imported module
     Module(Node<'a>),
+    
+    /// Represents a return value
+    Return(Option<Object<'a>>),
 }
 
 impl<'a> Variable<'a> {
@@ -196,10 +199,11 @@ impl<'a> Variable<'a> {
 /// # ScopeType
 /// This represents any of the kinds of dividers there are. This is used to determine how far back
 /// to pop off the stack when a scope ends or a `return` statement is encountered.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum ScopeType {
     /// Represents a function scope
-    Function,
+    /// The `Vec` is the path to the called function.
+    Function(Vec<String>),
 
     /// Represents a loop scope
     Loop,

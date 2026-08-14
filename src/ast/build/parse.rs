@@ -77,10 +77,22 @@ impl<'a> Parser {
             "while" => self.parse_while(),
             "datatype" => self.parse_datatype(),
             "import" => self.parse_import(),
+            "return" => self.parse_return(),
             _ => {
                 self.parse_misc(Some(word))
             }
         }
+    }
+
+    fn parse_return(&mut self) -> Result<Node<'a>, Error> {
+        let value = self.parse_individual_node()?;
+        self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
+        Ok(
+            Node {
+                token: self.current(),
+                ntype: NodeType::Return(Box::new(value)),
+            }
+        )
     }
 
     // called after unexpected open paren that isn't after a path

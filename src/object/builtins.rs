@@ -5,7 +5,7 @@
 //! `Executable`.
 
 use super::Object;
-use crate::Node;
+use crate::*;
 
 use std::fmt;
 
@@ -22,7 +22,7 @@ pub enum Executable<'a> {
     /// A wrapper around a Rust function that is callable by Ile code.
     Wrapper {
         signature: FunctionSignature<'a>,
-        func: &'a dyn Fn(FunctionSignature<'a>) -> Object,
+        func: &'a dyn Fn(FunctionSignature<'a>) -> Result<Option<Object<'a>>, error::Error>,
     },
 }
 
