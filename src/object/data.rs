@@ -10,7 +10,6 @@ use std::collections::HashMap;
 /// that have a type must have.
 #[derive(Clone, Debug)]
 pub struct DataType<'a> {
-    pub methods: HashMap<String, Object<'a>>,
     pub attributes: HashMap<String, Object<'a>>,
     pub name: String,
 }

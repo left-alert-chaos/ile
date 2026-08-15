@@ -3,6 +3,8 @@
 
 use crate::*;
 
+use std::collections::HashMap;
+
 /// # FunctionResult<'a>
 /// This is an alias for `Result<Option<Object<'a>>, Error>` and represents the return value of a
 /// function. If the function succeeds, the `Option` is its return value. If it fails, the `Error`
@@ -31,8 +33,39 @@ impl<'a> Node<'a> {
                 Ok(None)
             }
             NodeType::Chain(_) => self.walk_chain(stack),
+            NodeType::DataType { .. } => self.walk_datatype(stack),
             _ => Ok(None)
         }
+    }
+
+    fn walk_datatype(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::DataType { name, mut attributes } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        let mut attribute_values = HashMap::new();
+
+        // evaluate attribute nodes
+        for (attr_name, attr_value) in attributes.iter_mut() {
+            let node_value = match attr_value.walk(stack)? {
+                Some(value) => value,
+                None => return Err(Error::new_runtime(self.token.clone(), format!("attribute '{attr_name}' of datatype '{name}' has no value"))),
+            };
+            attribute_values.insert(attr_name.clone(), node_value);
+        }
+
+        // create a stack entry of the datatype
+        stack.push(
+            Variable::Datatype {
+                name: name.clone(),
+                dt: DataType {
+                    name,
+                    attributes: attribute_values,
+                }
+            }
+        );
+
+        Ok(None)
     }
 
     fn walk_chain(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
@@ -153,6 +186,15 @@ impl<'a> Node<'a> {
                 Some(obj) => arg_objects.push(obj),
                 None => return Err(Error::new_runtime(arg.token.clone(), format!("argument {index} didn't return anything"))),
             }
+        }
+
+        // check if there's an available datatype
+        if let Ok(dt) = stack.datatype_path_lookup(&mut path.clone(), &self.token.clone().unwrap()) {
+            return Ok(
+                Some(
+                    Object::Data(dt.attributes)
+                )
+            );
         }
 
         // get function

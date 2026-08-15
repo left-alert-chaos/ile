@@ -183,6 +183,7 @@ impl<'a> Variable<'a> {
             Self::Datatype { name, .. } => Some(name.clone()),
             Self::StackDivider(_) => None,
             Self::Module(Node { ntype: NodeType::Root { name, .. }, .. }) => Some(name.clone()),
+            Self::Return(_) => None,
             _ => unreachable!(),
         }
     }

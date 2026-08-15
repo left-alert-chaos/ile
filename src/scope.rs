@@ -152,6 +152,34 @@ impl<'a> ScopeStack<'a> {
         Ok(target)
     }
 
+    /// Very similar to `path_lookup()`, but searches for a datatype declaration instead.
+    pub fn datatype_path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<DataType<'a>, IleError> {
+        if path.is_empty() {
+            return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
+        }
+
+        let name = path.pop().unwrap();
+
+        match self.lookup(&name) {
+            Some(Variable::Datatype { dt, .. }) => {
+                Ok(dt.clone())
+            }
+            Some(Variable::Module(node)) => {
+                let NodeType::Root { stack, .. } = &mut node.ntype else {
+                    unreachable!();
+                };
+                if path.len() > 1 {
+                    path.remove(0);
+                    stack.datatype_path_lookup(path, token)
+                } else {
+                    return Err(IleError::new_runtime(Some(token.clone()), "modules aren't usable as datatypes"));
+                }
+            }
+            Some(_) => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' is an object, not a datatype"))),
+            None => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist")))
+        }
+    }
+
     /// In reversed order, count through scopes and remove the specified number. These scopes,
     /// including their `StackDivider`s, are cached and put first in the queue to do-cache.
     pub fn cache_scopes(&mut self, target: u64) -> Result<(), ScopeError> {
