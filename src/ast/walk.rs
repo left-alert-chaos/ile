@@ -34,6 +34,13 @@ impl<'a> Node<'a> {
             }
             NodeType::Chain(_) => self.walk_chain(stack),
             NodeType::DataType { .. } => self.walk_datatype(stack),
+            NodeType::Variable(mut path) => {
+                Ok(
+                    Some(
+                        stack.path_lookup(&mut path, &self.token.clone().unwrap())?.clone()
+                    )
+                )
+            }
             _ => Ok(None)
         }
     }

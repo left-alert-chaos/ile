@@ -427,7 +427,15 @@ impl<'a> Parser {
                     path.clear();
                 }
                 TokenType::Assignment => return self.parse_assignment(path),
-                TokenType::ChainEnd | TokenType::Comma => break,
+                TokenType::ChainEnd | TokenType::Comma => {
+                    if !path.is_empty() {
+                        chain.push(Node {
+                            ntype: NodeType::Variable(path.clone()),
+                            token: Some(token.clone()),
+                        });
+                    }
+                    break;
+                },
                 TokenType::CloseParen | TokenType::CloseBrace | TokenType::OpenBrace => {
                     self.index -= 1;
                     break;
