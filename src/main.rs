@@ -15,7 +15,6 @@ fn main() -> Result<(), error::Error> {
         let time = Instant::now();
         match ile::ast_from_file(args[1].clone()) {
             Ok(mut ast) => {
-                println!("{ast:#?}");
                 let NodeType::Root { name, mut stack, statements } = ast.ntype.clone() else {
                     unreachable!();
                 };
