@@ -83,7 +83,7 @@ impl<'a> Node<'a> {
         };
 
         if !operator.arms_are_correct(&arm1_value, &arm2_value) {
-            return Err(Error::new_runtime(self.token.clone(), format!("one or more arms is an incorrect classification for operator {operator}")));
+            return Err(Error::new_runtime(self.token.clone(), format!("one or more arms is an incorrect classification for operator {operator}\narms are {arm1_value:?} and {arm2_value:?}")));
         }
 
         // actually do the operation
@@ -194,9 +194,51 @@ impl<'a> Node<'a> {
             unreachable!();
         };
 
-        // FIXME: This should scan carried_value's attributes for the method name
-        for mut call in calls {
-            carried_value = call.walk(stack)?;
+        for (index, call) in calls.iter().enumerate() {
+            let mut call = call.clone();
+            let Some(value) = carried_value.clone() else {
+                carried_value = call.walk(stack)?;
+                continue;
+            };
+            let Object::Data(mut attrs) = value else {
+                return Err(Error::new_runtime(self.token.clone(), format!("object {value:?} isn't data, so it can't be chained")));
+            };
+            
+            // determine what to do with call or variable
+            match call.ntype {
+                NodeType::Call { arguments, path } => {
+                    let name = path[0].clone();
+                    let Some(function) = attrs.get_mut(&name) else {
+                        return Err(Error::new_runtime(call.token.clone(), format!("attribute '{name}' doesn't exist, so it can't be called")));
+                    };
+                    let Object::Function(executable) = function else {
+                        return Err(Error::new_runtime(call.token.clone(), format!("attribute '{name}' isn't a function, so it can't be called")));
+                    };
+
+                    // determine how to call the function
+                    match executable {
+                        // re-write the call logic
+                        Executable::CodeBlock(node) => {
+                            carried_value = node.walk_block(walk_arguments(arguments, stack)?, stack, &Vec::new())?;
+
+                            // don't error if it's the last segment and it wasn't trying to return
+                            // anything
+                            if carried_value.is_none() && index != calls.len() - 1 {
+                                return Err(Error::new_runtime(call.token.clone(), format!("function '{name}' didn't return anything, so can't be chained")))
+                            }
+                        }
+                        Executable::Wrapper { .. } => todo!(),
+                    }
+                }
+                NodeType::Variable(path) => {
+                    if let Some(value) = attrs.get(&path[0]) {
+                        carried_value = Some(value.clone());
+                    } else {
+                        return Err(Error::new_runtime(call.token.clone(), format!("chain's carried value has no attribute '{}'", path[0])));
+                    }
+                }
+                _ => return Err(Error::new_runtime(call.token.clone(), "only calls and variable lookups are allowed to be chained")),
+            }
         }
 
         Ok(carried_value)
@@ -293,18 +335,11 @@ impl<'a> Node<'a> {
     }
 
     fn walk_call(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::Call { mut arguments, path } = self.ntype.clone() else {
+        let NodeType::Call { arguments, path } = self.ntype.clone() else {
             unreachable!();
         };
 
-        // collect objects from node arguments
-        let mut arg_objects = Vec::new();
-        for (index, arg) in arguments.iter_mut().enumerate() {
-            match arg.walk(stack)? {
-                Some(obj) => arg_objects.push(obj),
-                None => return Err(Error::new_runtime(arg.token.clone(), format!("argument {index} didn't return anything"))),
-            }
-        }
+        let arg_objects = walk_arguments(arguments, stack)?;
 
         // check if there's an available datatype
         if let Ok(dt) = stack.datatype_path_lookup(&mut path.clone(), &self.token.clone().unwrap()) {

@@ -3,10 +3,12 @@
 
 pub mod build;
 pub mod node;
+pub mod arguments;
 mod walk;
 
 pub use build::*;
 pub use node::*;
+pub use arguments::*;
 
 use crate::*;
 
@@ -43,8 +45,8 @@ pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, String> {
 mod tests {
     use super::*;
 
-    fn test_build(code: &str) {
-        ast_from_str(code).unwrap();
+    fn test_build(code: &str) -> Node<'_> {
+        ast_from_str(code).unwrap()
     }
 
     #[test]
@@ -133,5 +135,20 @@ mod tests {
             func(),
         ];"#;
         test_build(code);
+    }
+
+    #[test]
+    fn add_ints() {
+        let code = r#"let x = 5;
+        let y = 1;
+        let z = x + y;"#;
+        let mut ast = test_build(code);
+        println!("{ast:#?}");
+        let mut stack = ScopeStack::new();
+        ast.walk(&mut stack).unwrap();
+        let Variable::Var { value, .. } = stack.lookup(&String::from("z")).unwrap() else {
+            panic!("Retrieved entry wasn't a Var");
+        };
+        assert_eq!(value.integer().unwrap(), 6);
     }
 }
