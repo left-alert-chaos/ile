@@ -41,7 +41,96 @@ impl<'a> Node<'a> {
                     )
                 )
             }
+            NodeType::Operator(_, _, _) => self.walk_operator(stack),
             _ => Ok(None)
+        }
+    }
+
+    fn walk_operator(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::Operator(operator, mut arm1, mut arm2) = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        let arm1_value = match arm1.walk(stack)? {
+            Some(value) => value,
+            None => return Err(Error::new_runtime(self.token.clone(), "operator arm 1 didn't return a value")),
+        };
+        let arm2_value = match arm2.walk(stack)? {
+            Some(value) => value,
+            None => return Err(Error::new_runtime(self.token.clone(), "operator arm 2 didn't return a value")),
+        };
+
+        if !operator.arms_are_correct(&arm1_value, &arm2_value) {
+            return Err(Error::new_runtime(self.token.clone(), format!("one or more arms is an incorrect classification for operator {operator}")));
+        }
+
+        // actually do the operation
+        // this is long and ugly, but it works, so who cares
+        match operator {
+            TokenType::Or => Ok(Some(Object::Boolean(arm1_value.boolean().unwrap() || arm2_value.boolean().unwrap()))),
+            TokenType::And => Ok(Some(Object::Boolean(arm1_value.boolean().unwrap() && arm2_value.boolean().unwrap()))),
+            TokenType::GreaterThan => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 > arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 > arm2_value.float().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() > arm2_value.string().unwrap().len()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is greater than {arm2_value:?}"))),
+                }
+            }
+            TokenType::LessThan => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 < arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 < arm2_value.float().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() < arm2_value.string().unwrap().len()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is less than {arm2_value:?}"))),
+                }
+            }
+            TokenType::GreaterThanOrEqualTo => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 >= arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 >= arm2_value.float().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() >= arm2_value.string().unwrap().len()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is greater than or equal to {arm2_value:?}"))),
+                }
+            }
+            TokenType::LessThanOrEqualTo => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 <= arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 <= arm2_value.float().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() <= arm2_value.string().unwrap().len()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is less than or equal to {arm2_value:?}"))),
+                }
+            }
+            TokenType::Addition => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Integer(i1 + arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Float(f1 + arm2_value.float().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::String(s1 + arm2_value.string().unwrap()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't add {arm1_value:?} to {arm2_value:?}"))),
+                }
+            }
+            TokenType::Subtraction => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Integer(i1 - arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Float(f1 - arm2_value.float().unwrap()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't subtract {arm1_value:?} from {arm2_value:?}"))),
+                }
+            }
+            TokenType::Multiplication => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Integer(i1 * arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Float(f1 * arm2_value.float().unwrap()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't multiply {arm1_value:?} by {arm2_value:?}"))),
+                }
+            }
+            TokenType::Division => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Float((i1 / arm2_value.integer().unwrap()) as f64))),
+                    Object::Float(f1) => Ok(Some(Object::Float(f1 / arm2_value.float().unwrap()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't divide {arm1_value:?} by {arm2_value:?}"))),
+                }
+            }
+            _ => unreachable!(),
         }
     }
 

@@ -156,7 +156,7 @@ impl fmt::Display for TokenType {
     }
 }
 
-impl TokenType {
+impl<'a> TokenType {
     /// Determine if the token is logical operator
     pub fn is_operator(&self) -> bool {
         matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo | Self::And | Self::Or)
@@ -188,6 +188,20 @@ impl TokenType {
         };
 
         self_ref == other_ref
+    }
+
+    // This took waaaay too long to write because of stupid lifetime errors.
+    /// Check if two operator arms are the correct classifications to use this operator
+    pub fn arms_are_correct<'b, 'c>(&self, arm1: &Object<'_>, arm2: &Object<'a>) -> bool
+    {
+        if self.is_boolean_operator() {
+            return arm1.boolean().is_some() && arm2.boolean().is_some();
+        }
+
+        match self {
+            Self::Addition => arm1.boolean().is_none() && ((arm1.is_array() && arm2.is_array()) || (arm1.is_data() && arm2.is_data()) || (arm1.float().is_some() && arm2.float().is_some()) || (arm1.integer().is_some() && arm2.float().is_some())),
+            _ => (arm1.integer().is_some() && arm2.integer().is_some()) || (arm1.float().is_some() && arm2.float().is_some()) || (arm1.is_string() && arm2.is_string())
+        }
     }
 
     fn from(mut value: String, file: String) -> Result<Self, Error> {

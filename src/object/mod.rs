@@ -52,7 +52,16 @@ pub enum Object<'a> {
     Array(Vec<Self>),
 }
 
+// a bunch of small helper funcs
 impl<'a> Object<'a> {
+    // determine if the object is a function
+    pub fn is_function(&self) -> bool {
+        match self {
+            Self::Function(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is a function. If it is, the underlying `Executable<'a>` will be
     /// returned in an `Option`.
     pub fn function(&self) -> Option<Executable<'a>> {
@@ -60,6 +69,14 @@ impl<'a> Object<'a> {
             Some(exec.clone())
         } else {
             None
+        }
+    }
+
+    /// Determine if this object is Data.
+    pub fn is_data(&self) -> bool {
+        match self {
+            Self::Data(_) => true,
+            _ => false,
         }
     }
 
@@ -75,12 +92,28 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if this object is an integer.
+    pub fn is_integer(&self) -> bool {
+        match self {
+            Self::Integer(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is an Integer and return the underlying `i64` if it is.
     pub fn integer(&self) -> Option<i64> {
         if let Self::Integer(x) = self {
             Some(*x)
         } else {
             None
+        }
+    }
+
+    /// Determine if this object is a float.
+    pub fn is_float(&self) -> bool {
+        match self {
+            Self::Float(_) => true,
+            _ => false,
         }
     }
 
@@ -93,6 +126,14 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if this object is a float.
+    pub fn is_boolean(&self) -> bool {
+        match self {
+            Self::Boolean(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is a Boolean and return underlying `bool` if it is.
     pub fn boolean(&self) -> Option<bool> {
         if let Self::Boolean(b) = self {
@@ -102,12 +143,28 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if this object is a float.
+    pub fn is_string(&self) -> bool {
+        match self {
+            Self::String(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is a String and return a reference to underlying `String` if it is.
     pub fn string(&self) -> Option<&String> {
         if let Self::String(s) = self {
             Some(s)
         } else {
             None
+        }
+    }
+
+    /// Determine if this object is a float.
+    pub fn is_array(&self) -> bool {
+        match self {
+            Self::Array(_) => true,
+            _ => false,
         }
     }
 
