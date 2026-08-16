@@ -46,7 +46,22 @@ mod tests {
     use super::*;
 
     fn test_build(code: &str) -> Node<'_> {
-        ast_from_str(code).unwrap()
+        let ast = ast_from_str(code).unwrap();
+        println!("{ast:#?}");
+        ast
+    }
+
+    fn test_var<'a>(name: impl ToString, mut ast: Node<'a>) -> Object<'a> {
+        let mut stack = ScopeStack::new();
+        ast.walk(&mut stack).unwrap();
+        let name = name.to_string();
+        let Some(entry) = stack.lookup(&name) else {
+            panic!("stack has no entry '{name}'");
+        };
+        let Variable::Var { value, .. } = entry else {
+            panic!("retrieved stack entry wasn't a var");
+        };
+        value.clone()
     }
 
     #[test]
@@ -142,13 +157,28 @@ mod tests {
         let code = r#"let x = 5;
         let y = 1;
         let z = x + y;"#;
-        let mut ast = test_build(code);
-        println!("{ast:#?}");
-        let mut stack = ScopeStack::new();
-        ast.walk(&mut stack).unwrap();
-        let Variable::Var { value, .. } = stack.lookup(&String::from("z")).unwrap() else {
-            panic!("Retrieved entry wasn't a Var");
-        };
-        assert_eq!(value.integer().unwrap(), 6);
+        let ast = test_build(code);
+        assert_eq!(test_var("z", ast).integer().unwrap(), 6);
+    }
+
+    #[test]
+    fn nested_attribute_lookup() {
+        let code = "
+        datatype Inner {
+            let attr = 6;
+        }
+
+        datatype Middle {
+            let attr = Inner();
+        }
+
+        datatype Outer {
+            let attr = Middle();
+        }
+
+        let o = Outer();
+        let x = o.attr.attr.attr;";
+        let ast = test_build(code);
+        assert_eq!(test_var("x", ast).integer().unwrap(), 6);
     }
 }

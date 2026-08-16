@@ -128,7 +128,7 @@ impl<'a> ScopeStack<'a> {
             }
 
             None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),
-            _ => unreachable!(),
+            _ => return Err(IleError::new_runtime(Some(token.clone()), "only variables can be looked up with paths")),
         };
         if path.len() == 1 {
             return Ok(first);

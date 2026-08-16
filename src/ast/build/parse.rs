@@ -267,10 +267,10 @@ impl<'a> Parser {
 
             // determine where to put value
             match value.ntype {
-                NodeType::Literal(_) | NodeType::Call { .. } | NodeType::CodeBlock { .. } => {
+                NodeType::Literal(_) | NodeType::Call { .. } | NodeType::CodeBlock { .. } | NodeType::Chain(_) => {
                     attributes.insert(path[0].clone(), *value);
                 }
-                _ => return Err(Error::new_parsing(self.current(), "only functions, calls, and literals can be assigned inside datatype definitions")),
+                _ => return Err(Error::new_parsing(self.current(), format!("only functions, calls, literals and chains can be assigned inside datatype definitions, not {:?}", value.ntype))),
             }
         }
 
@@ -458,12 +458,17 @@ impl<'a> Parser {
             }
         }
 
-        Ok(
-            Node {
-                ntype: NodeType::Chain(chain),
-                token: self.current(),
-            }
-        )
+        // first check if it's a lone call or lookup
+        if chain.len() == 1 {
+            Ok(chain[0].clone())
+        } else {
+            Ok(
+                Node {
+                    ntype: NodeType::Chain(chain),
+                    token: self.current(),
+                }
+            )
+        }
     }
 
     fn parse_import(&mut self) -> Result<Node<'a>, Error> {
