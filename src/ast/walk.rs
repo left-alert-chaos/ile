@@ -83,7 +83,7 @@ impl<'a> Node<'a> {
         };
 
         if !operator.arms_are_correct(&arm1_value, &arm2_value) {
-            return Err(Error::new_runtime(self.token.clone(), format!("one or more arms is an incorrect classification for operator {operator}\narms are {arm1_value:?} and {arm2_value:?}")));
+            return Err(Error::new_runtime(self.token.clone(), format!("one or more arms is an incorrect classification for operator {operator};arms are {arm1_value:?} and {arm2_value:?}")));
         }
 
         // actually do the operation
