@@ -218,8 +218,8 @@ impl<'a> Node<'a> {
         };
 
         if path.is_empty() {
+            path.push(name.clone());
             if create {
-                path.push(name);
                 stack.set_path(&path, walk_res, &self.token.clone().unwrap())?;
             } else {
                 if let Ok(variable) = stack.path_lookup(&mut path, &self.token.clone().unwrap()) {
