@@ -42,8 +42,30 @@ impl<'a> Node<'a> {
                 )
             }
             NodeType::Operator(_, _, _) => self.walk_operator(stack),
+            NodeType::If { .. } => self.walk_if(stack),
             _ => Ok(None)
         }
+    }
+
+    fn walk_if(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::If { mut condition, block, else_clause } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        let Some(Object::Boolean(condition_value)) = condition.walk(stack)? else {
+            return Err(Error::new_runtime(self.token.clone(), "only booleans can be if conditions"));
+        };
+
+        // easiest logic in the history of programming languages
+        if condition_value {
+            block.walk_block(Vec::new(), stack, &Vec::new())?;
+        } else {
+            if let Some(else_clause) = else_clause {
+                else_clause.walk_block(Vec::new(), stack, &Vec::new())?;
+            }
+        }
+
+        Ok(None)
     }
 
     fn walk_operator(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
