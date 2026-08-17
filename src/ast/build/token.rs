@@ -305,6 +305,7 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
     let mut string = false;
     let mut previous = ' ';
     let mut line = 1;
+    let mut comment = false;
 
     // Closure to run when all characters of a token have been read
     let mut finish_token = |b: &mut String, s: bool, line: u64| {
@@ -326,6 +327,10 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
     };
 
     for (index, character) in code.chars().enumerate() {
+        if comment && character != '\n' {
+            continue;
+        }
+
         // This match statement is ugly and gross
         match character {
             // single-character tokens are processed by sending complete previous token and then
@@ -395,6 +400,7 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 finish_token(&mut buffer, string, line)?;
             }
             '\n' => {
+                comment = false;
                 if !string {
                     finish_token(&mut buffer, string, line)?;
                 } else {
@@ -402,8 +408,16 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 }
                 line += 1;
             }
+            '#' => {
+                if !string {
+                    println!("Started comment");
+                    comment = true;
+                }
+            }
             _ => {
-                buffer.push(character);
+                if !comment {
+                    buffer.push(character);
+                }
             }
         }
 
@@ -466,5 +480,11 @@ mod tests {
     fn comma() {
         let token = token_types(",").unwrap()[0].clone();
         assert_eq!(token, TokenType::Comma);
+    }
+
+    #[test]
+    fn comment() {
+        let tokens = tokenize("#this line is commented out\n15 #the rest of this line is also commented out", None).unwrap();
+        assert_eq!(tokens.len(), 1);
     }
 }
