@@ -38,3 +38,15 @@ macro_rules! signature {
         }
     };
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn generate_signature() {
+        let generated = signature!("string", "int");
+        assert_eq!(generated[0].string().unwrap(), &String::new());
+        assert_eq!(generated[1].integer().unwrap(), 0);
+    }
+}
