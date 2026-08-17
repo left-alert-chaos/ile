@@ -62,6 +62,6 @@ impl<'a> Into<Node<'a>> for Library<'a> {
 
 impl<'a> Into<Variable<'a>> for Library<'a> {
     fn into(self) -> Variable<'a> {
-        Variable::Module(self.into())        
+        Variable::UnimportedModule(self.into())        
     }
 }

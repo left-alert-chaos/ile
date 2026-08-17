@@ -40,7 +40,7 @@ pub fn include(scope: &mut ScopeStack<'_>) {
     );
 
     // add the std
-    scope.push(build_ile_std().into())
+    scope.push(build_ile_std().into());
 }
 
 fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {
