@@ -56,6 +56,20 @@ pub enum Object<'a> {
     Array(Vec<Self>),
 }
 
+impl fmt::Display for Object<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Function(exec) => write!(f, "Function with executable {exec:?}"),
+            Self::Data(map) => write!(f, "Data with attributes {map:?}"),
+            Self::Integer(i) => write!(f, "{i}"),
+            Self::Float(float) => write!(f, "{float}"),
+            Self::Boolean(b) => write!(f, "{b}"),
+            Self::String(s) => write!(f, "{s}"),
+            Self::Array(a) => write!(f, "{a:?}"),
+        }
+    }
+}
+
 // a bunch of small helper funcs
 impl<'a> Object<'a> {
     // determine if the object is a function

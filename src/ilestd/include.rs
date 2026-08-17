@@ -18,7 +18,7 @@ fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {
         return Err(Error::new_rust("println() takes one argument"));
     }
 
-    println!("{:?}", args[0]);
+    println!("{}", args[0]);
     
     Ok(None)
 }
