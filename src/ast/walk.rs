@@ -5,12 +5,6 @@ use crate::*;
 
 use std::collections::HashMap;
 
-/// # FunctionResult<'a>
-/// This is an alias for `Result<Option<Object<'a>>, Error>` and represents the return value of a
-/// function. If the function succeeds, the `Option` is its return value. If it fails, the `Error`
-/// is used to determine what went wrong.
-pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
-
 impl<'a> Node<'a> {
     /// Execute the node.
     pub fn walk(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
