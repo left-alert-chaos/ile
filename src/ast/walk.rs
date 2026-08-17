@@ -44,6 +44,7 @@ impl<'a> Node<'a> {
             NodeType::Operator(_, _, _) => self.walk_operator(stack),
             NodeType::If { .. } => self.walk_if(stack),
             NodeType::For { .. } => self.walk_for(stack),
+            NodeType::While { .. } => self.walk_while(stack),
             _ => Ok(None)
         }
     }
@@ -59,6 +60,28 @@ impl<'a> Node<'a> {
             if condition_result.is_none() { break; }
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
+
+            if stack.is_stopper() { break; }
+        }
+
+        Ok(None)
+    }
+
+    fn walk_while(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::While { mut condition, block } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        // repeat until condition returns false
+        loop {
+            let condition_result = condition.walk(stack)?;
+
+            // check if it's false; any other value passes, including none
+            if let Some(result) = condition_result && result.boolean() == Some(false) { break; }
+
+            block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
+
+            if stack.is_stopper() { break; }
         }
 
         Ok(None)
@@ -446,13 +469,15 @@ impl<'a> Node<'a> {
             );
         }
 
+        // Option<Option<Object>>
+        // The first option is whether to return; second is what, if any, to return
         let mut return_value = None;
 
         for mut statement in chains {
             statement.walk(stack)?;
 
             if let Some(value) = stack.is_return() {
-                return_value = value;
+                return_value = Some(value);
                 break;
             }
 
@@ -477,7 +502,18 @@ impl<'a> Node<'a> {
         // Remove variables from function's scope
         stack.return_cleanup().unwrap();
 
-        Ok(return_value)
+        // keep the return statement
+        if !is_function && return_value.is_some() {
+            stack.push(Variable::Return(return_value.clone().unwrap()));
+        } else {
+        }
+
+        Ok(
+            match return_value {
+                None => None,
+                Some(value) => value,
+            }
+        )
     }
 }
 
