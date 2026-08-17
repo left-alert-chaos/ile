@@ -22,7 +22,7 @@ pub enum Executable<'a> {
     /// A wrapper around a Rust function that is callable by Ile code.
     Wrapper {
         signature: FunctionSignature<'a>,
-        func: &'a dyn Fn(FunctionSignature<'a>) -> Result<Option<Object<'a>>, error::Error>,
+        func: &'a dyn Fn(FunctionSignature<'a>) -> FunctionResult<'a>,
     },
 }
 

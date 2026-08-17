@@ -5,12 +5,6 @@ use crate::*;
 
 use std::collections::HashMap;
 
-/// # FunctionResult<'a>
-/// This is an alias for `Result<Option<Object<'a>>, Error>` and represents the return value of a
-/// function. If the function succeeds, the `Option` is its return value. If it fails, the `Error`
-/// is used to determine what went wrong.
-pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
-
 impl<'a> Node<'a> {
     /// Execute the node.
     pub fn walk(&mut self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
@@ -413,29 +407,32 @@ impl<'a> Node<'a> {
                         ));
                     };
 
+                    let arg_objects = walk_arguments(arguments, stack)?;
+
                     // determine how to call the function
                     match executable {
                         // re-write the call logic
                         Executable::CodeBlock(node) => {
                             carried_value = node.walk_block(
-                                walk_arguments(arguments, stack)?,
+                                arg_objects,
                                 stack,
                                 &Vec::new(),
                                 true,
                             )?;
 
-                            // don't error if it's the last segment and it wasn't trying to return
-                            // anything
-                            if carried_value.is_none() && index != calls.len() - 1 {
-                                return Err(Error::new_runtime(
-                                    call.token.clone(),
-                                    format!(
-                                        "function '{name}' didn't return anything, so can't be chained"
-                                    ),
-                                ));
-                            }
                         }
-                        Executable::Wrapper { .. } => todo!(),
+                        Executable::Wrapper { func, .. } => carried_value = func(arg_objects)?,
+                    }
+
+                    // don't error if it's the last segment and it wasn't trying to return
+                    // anything
+                    if carried_value.is_none() && index != calls.len() - 1 {
+                        return Err(Error::new_runtime(
+                            call.token.clone(),
+                            format!(
+                                "function '{name}' didn't return anything, so can't be chained"
+                            ),
+                        ));
                     }
                 }
                 NodeType::Variable(path) => {
@@ -611,7 +608,7 @@ impl<'a> Node<'a> {
 
         match executable {
             Executable::CodeBlock(block) => block.walk_block(arg_objects, stack, &path, true),
-            Executable::Wrapper { signature, func } => func(signature),
+            Executable::Wrapper { func, .. } => func(arg_objects),
         }
     }
 

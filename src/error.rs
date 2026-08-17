@@ -59,6 +59,17 @@ impl Error {
         }
     }
 
+    /// Create an `Error` with an arbitrary message. Used for when something doesn't work in a Rust
+    /// function.
+    pub fn new_rust(message: impl ToString) -> Self {
+        Self {
+            message: message.to_string(),
+            location: PipelineLocation::Rust,
+            file: String::from("unknown rust"),
+            token: None,
+        }
+    }
+
     /// Create a detailed error message including location, type, and reason.
     pub fn format(&self) -> String {
         let line;
@@ -98,6 +109,10 @@ pub enum PipelineLocation {
 
     /// Represents a problem that prevents an AST from successfully walking.
     Runtime,
+
+    /// Represents a problem that prevents an AST from successfully walking that is generated in a
+    /// Rust function.
+    Rust,
 }
 
 impl fmt::Display for PipelineLocation {
@@ -106,6 +121,7 @@ impl fmt::Display for PipelineLocation {
             PipelineLocation::Tokenization => "tokenization",
             PipelineLocation::Parsing => "parsing",
             PipelineLocation::Runtime => "runtime",
+            PipelineLocation::Rust => "rust",
         };
 
         write!(f, "{repr}")

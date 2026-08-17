@@ -20,27 +20,21 @@ fn main() -> Result<(), error::Error> {
         match ile::ast_from_file(args[1].clone()) {
             Ok(mut ast) => {
                 let NodeType::Root {
-                    name,
                     mut stack,
-                    statements,
+                    ..
                 } = ast.ntype.clone()
                 else {
                     unreachable!();
                 };
+
+                // include the standard library
+                ile::ilestd::include::include(&mut stack);
+
                 ast.walk(&mut stack)?;
-                ast = Node {
-                    token: None,
-                    ntype: NodeType::Root {
-                        name,
-                        stack,
-                        statements,
-                    },
-                };
-                println!("\n\nDone! AST:\n{ast:#?}");
             }
             Err(e) => println!("\n\n{e}"),
         }
-        eprintln!("\n\nElapsed time to generate AST: {:?}", time.elapsed());
+        eprintln!("\n\nElapsed time to generate and walk AST: {:?}", time.elapsed());
     }
 
     Ok(())

@@ -21,7 +21,11 @@ pub mod data;
 pub use data::DataType;
 pub mod builtins;
 pub use builtins::*;
-use std::collections::HashMap;
+
+use std::{
+    collections::HashMap,
+    fmt,
+};
 
 use crate::*;
 
@@ -50,6 +54,20 @@ pub enum Object<'a> {
 
     /// Primitive array type
     Array(Vec<Self>),
+}
+
+impl fmt::Display for Object<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Function(exec) => write!(f, "Function with executable {exec:?}"),
+            Self::Data(map) => write!(f, "Data with attributes {map:?}"),
+            Self::Integer(i) => write!(f, "{i}"),
+            Self::Float(float) => write!(f, "{float}"),
+            Self::Boolean(b) => write!(f, "{b}"),
+            Self::String(s) => write!(f, "{s}"),
+            Self::Array(a) => write!(f, "{a:?}"),
+        }
+    }
 }
 
 // a bunch of small helper funcs
