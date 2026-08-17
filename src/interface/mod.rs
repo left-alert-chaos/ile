@@ -14,3 +14,27 @@ pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
 pub fn wrap_function<'a>(function: &'a dyn Fn(FunctionSignature<'a>) -> FunctionResult<'a>, signature: FunctionSignature<'a>) -> Object<'a> {
     Object::Function(Executable::Wrapper { signature, func: function })
 }
+
+/// Takes a &str and converts it into a FunctionSignature<'_>
+/// Uses default values, so the values inside the objects aren't very helpful.
+#[macro_export]
+macro_rules! signature {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut objects = Vec::new();
+            use std::collections::HashMap;
+            $(
+                objects.push(match $x {
+                    "int" => Object::Integer(0),
+                    "float" => Object::Float(0.0),
+                    "bool" => Object::Boolean(false),
+                    "string" => Object::String(String::new()),
+                    "array" => Object::Array(Vec::new()),
+                    "data" => Object::Data(HashMap::new()),
+                    _ => panic!("Only int, float, bool, string, array, and data are allowed in signature macro"),
+                });
+            )*
+            objects
+        }
+    };
+}

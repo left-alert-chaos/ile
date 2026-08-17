@@ -11,31 +11,31 @@ pub fn include(scope: &mut ScopeStack<'_>) {
     scope.push(
         Variable::Var {
             name: String::from("println"),
-            value: wrap_function(&ile_println, Vec::from([Object::String(String::new())]))
+            value: wrap_function(&ile_println, signature!("string")),
         }
     );
     scope.push(
         Variable::Var {
             name: String::from("input"),
-            value: wrap_function(&input, Vec::from([Object::String(String::new())])),
+            value: wrap_function(&input, signature!("string")),
         }
     );
     scope.push(
         Variable::Var {
             name: String::from("eprintln"),
-            value: wrap_function(&ile_eprintln, Vec::from([Object::String(String::new())])),
+            value: wrap_function(&ile_eprintln, signature!("string")),
         }
     );
     scope.push(
         Variable::Var {
             name: String::from("print"),
-            value: wrap_function(&ile_print, Vec::from([Object::String(String::new())])),
+            value: wrap_function(&ile_print, signature!("string")),
         }
     );
     scope.push(
         Variable::Var {
             name: String::from("eprint"),
-            value: wrap_function(&ile_eprint, Vec::from([Object::String(String::new())])),
+            value: wrap_function(&ile_eprint, signature!("string")),
         }
     )
 }
