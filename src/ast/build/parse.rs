@@ -78,10 +78,33 @@ impl<'a> Parser {
             "datatype" => self.parse_datatype(),
             "import" => self.parse_import(),
             "return" => self.parse_return(),
+            "break" | "continue" => self.parse_control_flow(),
             _ => {
                 self.parse_misc(Some(word))
             }
         }
+    }
+
+    /// Returns a `Break` or `Continue`
+    fn parse_control_flow(&mut self) -> Result<Node<'a>, Error> {
+        self.index -= 1;
+        let Token { ttype: TokenType::Word(word), .. } = self.next().unwrap() else {
+            unreachable!();
+        };
+        let ntype = match word.as_str() {
+            "break" => NodeType::Break,
+            "continue" => NodeType::Continue,
+            _ => unreachable!(),
+        };
+        if let Some(next) = self.peek_next() && next.ttype == TokenType::ChainEnd {
+            self.index += 1;
+        }
+        Ok(
+            Node {
+                token: self.current(),
+                ntype,
+            }
+        )
     }
 
     fn parse_return(&mut self) -> Result<Node<'a>, Error> {

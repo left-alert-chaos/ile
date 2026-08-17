@@ -32,6 +32,12 @@ pub enum NodeType<'a> {
     /// Represents a `return` statement
     Return(Box<Node<'a>>),
 
+    /// Represents a `break` statement
+    Break,
+
+    /// Represents a `continue` statement
+    Continue,
+
     /// Represents a logic operator (addition, subtraction, comparisons, etc)
     Operator(TokenType, Box<Node<'a>>, Box<Node<'a>>),
 
