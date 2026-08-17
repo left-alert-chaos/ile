@@ -27,7 +27,7 @@ fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {
         return Err(Error::new_rust("println() takes one argument"));
     }
 
-    println!("{}\n", args[0]);
+    println!("{}", args[0]);
     
     Ok(None)
 }
@@ -35,7 +35,7 @@ fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {
 // reads a line of `stdin` and returns it as an `Object::String`
 fn input(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     if args.len() == 1 {
-        println!("{}", args[0]);
+        print!("{}", args[0]);
     } else if args.len() > 1 {
         return Err(Error::new_rust("input() takes one or no arguments"));
     }
