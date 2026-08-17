@@ -225,6 +225,12 @@ pub enum Variable<'a> {
     
     /// Represents a return value
     Return(Option<Object<'a>>),
+
+    /// Represent the break keyword
+    Break,
+
+    /// Represents the continue keyword
+    Continue
 }
 
 impl<'a> Variable<'a> {
@@ -238,10 +244,8 @@ impl<'a> Variable<'a> {
         match self {
             Self::Var { name, .. } => Some(name.clone()),
             Self::Datatype { name, .. } => Some(name.clone()),
-            Self::StackDivider(_) => None,
             Self::Module(Node { ntype: NodeType::Root { name, .. }, .. }) => Some(name.clone()),
-            Self::Return(_) => None,
-            _ => unreachable!(),
+            _ => None,
         }
     }
 
@@ -250,6 +254,15 @@ impl<'a> Variable<'a> {
         Self::Datatype {
             name: dt.name.clone(),
             dt,
+        }
+    }
+
+    /// Checks if this is a `Return`, `Break`, or `Continue`
+    // Poorly named. sosumi
+    pub fn is_stopper(&self) -> bool {
+        match self {
+            Self::Return(_) | Self::Break | Self::Continue => true,
+            _ => false,
         }
     }
 }

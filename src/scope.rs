@@ -274,6 +274,14 @@ impl<'a> ScopeStack<'a> {
         }
     }
 
+    /// Check if the last entry in the stack is a stopper.
+    pub fn is_stopper(&mut self) -> bool {
+        let last = self.current_stack.pop().unwrap();
+        let new = last.clone();
+        self.push(last);
+        new.is_stopper()
+    }
+
     /// Used by `restore_scopes()` and `cache_scopes()`
     fn restore_scope(&mut self, mut scope: Vec<Variable<'a>>) {
         while let Some(var) = scope.pop() {

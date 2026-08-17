@@ -43,8 +43,25 @@ impl<'a> Node<'a> {
             }
             NodeType::Operator(_, _, _) => self.walk_operator(stack),
             NodeType::If { .. } => self.walk_if(stack),
+            NodeType::For { .. } => self.walk_for(stack),
             _ => Ok(None)
         }
+    }
+
+    fn walk_for(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::For { mut condition, block } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        // repeat until condition doesn't return anything
+        loop {
+            let condition_result = condition.walk(stack)?;
+            if condition_result.is_none() { break; }
+
+            block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
+        }
+
+        Ok(None)
     }
 
     fn walk_if(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
@@ -58,10 +75,10 @@ impl<'a> Node<'a> {
 
         // easiest logic in the history of programming languages
         if condition_value {
-            block.walk_block(Vec::new(), stack, &Vec::new())?;
+            block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
         } else {
             if let Some(else_clause) = else_clause {
-                else_clause.walk_block(Vec::new(), stack, &Vec::new())?;
+                else_clause.walk_block(Vec::new(), stack, &Vec::new(), false)?;
             }
         }
 
@@ -219,7 +236,7 @@ impl<'a> Node<'a> {
                     match executable {
                         // re-write the call logic
                         Executable::CodeBlock(node) => {
-                            carried_value = node.walk_block(walk_arguments(arguments, stack)?, stack, &Vec::new())?;
+                            carried_value = node.walk_block(walk_arguments(arguments, stack)?, stack, &Vec::new(), true)?;
 
                             // don't error if it's the last segment and it wasn't trying to return
                             // anything
@@ -262,10 +279,10 @@ impl<'a> Node<'a> {
         if path.is_empty() {
             path.push(name.clone());
             if create {
-                stack.set_path(&path, walk_res, &self.token.clone().unwrap())?;
+                stack.set_path(&path, walk_res.clone(), &self.token.clone().unwrap())?;
             } else {
                 if let Ok(variable) = stack.path_lookup(&mut path, &self.token.clone().unwrap()) {
-                    *variable = walk_res;
+                    *variable = walk_res.clone();
                 } else {
                     return Err(Error::new_runtime(self.token.clone(), format!("can't re-assign to variable '{name}' that doesn't exist")));
                 }
@@ -276,11 +293,11 @@ impl<'a> Node<'a> {
             let Object::Data(attrs) = obj else {
                 return Err(Error::new_runtime(self.token.clone(), format!("can't assign attribute to non-data object '{}.{name}'", debug_path(&path))));
             };
-            attrs.insert(name, walk_res);
+            attrs.insert(name, walk_res.clone());
             *obj = Object::Data(attrs.clone());
         }
 
-        Ok(None)
+        Ok(Some(walk_res))
     }
 
     fn walk_import(&self, self_stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
@@ -358,7 +375,7 @@ impl<'a> Node<'a> {
 
         match executable {
             Executable::CodeBlock(block) => {
-                block.walk_block(arg_objects, stack, &path)
+                block.walk_block(arg_objects, stack, &path, true)
             }
             Executable::Wrapper { signature, func } => {
                 func(signature)
@@ -366,7 +383,7 @@ impl<'a> Node<'a> {
         }
     }
 
-    fn walk_block(&self, mut args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>) -> FunctionResult<'a> {
+    fn walk_block(&self, mut args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>, is_function: bool) -> FunctionResult<'a> {
         let path = path.clone();
         let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
             unreachable!();
@@ -436,6 +453,10 @@ impl<'a> Node<'a> {
 
             if let Some(value) = stack.is_return() {
                 return_value = value;
+                break;
+            }
+
+            if !is_function && stack.is_stopper() {
                 break;
             }
         }
