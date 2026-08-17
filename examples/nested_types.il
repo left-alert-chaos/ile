@@ -1,3 +1,5 @@
+# This file demonstrates defining some datatypes and retrieving nested attributes from vthe top-level object.
+
 datatype Inner {
 	let attr = 6;
 }

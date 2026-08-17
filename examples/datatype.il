@@ -1,3 +1,5 @@
+# This file defines a datatype, which is like a template for a data object.
+
 datatype MyType {
 	let x = 5;
 	let method = (self) {
