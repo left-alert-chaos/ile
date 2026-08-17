@@ -1,31 +1,21 @@
 //! # Object
-//! This module holds code having to do with Ile objects- functions, primitives, methods, and data.
+//! This module holds code having to do with Ile objects- functions, primitives, and data.
 //! These are classifications, which are distinct from types. A type is a way of classifying data
 //! objects.
 //!
 //! # Overview
 //! It is important to make the distinction between object classifications; data is any object
 //! that is not callable and represents some piece of information. Functions are callable objects.
-//! Methods are callable objects that can be stored in a data type's method table.
-//!
-//! # Method tables
-//! To avoid having to store a set of large methods on the backend for every instantiated object,
-//! data types store a table of methods and their names. When a method is called on a data object,
-//! the interpreter searches its type's method table. If it finds a method of the called name, it
-//! executes it. If it doesn't, it searches the object's attributes for a method of the same name.
-//! If one is found, that is executed. If not, an error is raised.
 //!
 //! # Data
 //! Most things a developer working in Ile will encounter are data. Data is any object that is not
-//! callable. It is the only object classification that can have attributes or hold other objects.
-//! Every data object is stored as 2 things: its type and its attributes.
-//!
-//! On the back end, the type is stored as an immutable reference to a struct implementing `DataType`
-//! stored in the interpreter. The attributes are stored as a `HashMap`.
+//! callable and not a primitive. It is the only object classification that can have attributes or
+//! hold other objects. It is stored as a `HashMap` of attributes.
 //!
 //! # Primitive types
-//! There are 4 primitive types: `Integer`, `Float`, `Boolean`, and `String`. They are thin wrappers
-//! around Rust types and have no methods. To interact with them, you must use external functions.
+//! There are 5 primitive types: `Integer`, `Float`, `Boolean`, `Array`, and `String`. They are
+//! thin wrappers around Rust types and have no methods. To interact with them, you must use external
+//! functions.
 
 pub mod data;
 pub use data::DataType;
@@ -44,10 +34,7 @@ pub enum Object<'a> {
     Function(Executable<'a>),
 
     /// Holds a dynamic value that has a type, attributes, and methods.
-    Data {
-        data_type: &'a DataType<'a>,
-        attributes: HashMap<&'a str, Object<'a>>,
-    },
+    Data(HashMap<String, Object<'a>>),
 
     /// Primitive number type
     Integer(i64),
@@ -60,9 +47,21 @@ pub enum Object<'a> {
 
     /// Primitive string type
     String(String),
+
+    /// Primitive array type
+    Array(Vec<Self>),
 }
 
+// a bunch of small helper funcs
 impl<'a> Object<'a> {
+    // determine if the object is a function
+    pub fn is_function(&self) -> bool {
+        match self {
+            Self::Function(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is a function. If it is, the underlying `Executable<'a>` will be
     /// returned in an `Option`.
     pub fn function(&self) -> Option<Executable<'a>> {
@@ -73,19 +72,31 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if this object is Data.
+    pub fn is_data(&self) -> bool {
+        match self {
+            Self::Data(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is data and return related info if it is.
-    pub fn data<'b>(&'b self) -> Option<(&'b DataType<'b>, HashMap<&'b str, Object<'b>>)>
+    pub fn data<'b>(&'b self) -> Option<HashMap<String, Object<'b>>>
     where
         'b: 'a,
     {
-        if let Self::Data {
-            data_type,
-            attributes,
-        } = self
-        {
-            Some((*data_type, attributes.clone()))
+        if let Self::Data(attributes) = self {
+            Some(attributes.clone())
         } else {
             None
+        }
+    }
+
+    /// Determine if this object is an integer.
+    pub fn is_integer(&self) -> bool {
+        match self {
+            Self::Integer(_) => true,
+            _ => false,
         }
     }
 
@@ -98,12 +109,28 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if this object is a float.
+    pub fn is_float(&self) -> bool {
+        match self {
+            Self::Float(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is a Float and return underlying `f64` if it is
     pub fn float(&self) -> Option<f64> {
         if let Self::Float(f) = self {
             Some(*f)
         } else {
             None
+        }
+    }
+
+    /// Determine if this object is a float.
+    pub fn is_boolean(&self) -> bool {
+        match self {
+            Self::Boolean(_) => true,
+            _ => false,
         }
     }
 
@@ -116,10 +143,36 @@ impl<'a> Object<'a> {
         }
     }
 
+    /// Determine if this object is a float.
+    pub fn is_string(&self) -> bool {
+        match self {
+            Self::String(_) => true,
+            _ => false,
+        }
+    }
+
     /// Determine if the object is a String and return a reference to underlying `String` if it is.
     pub fn string(&self) -> Option<&String> {
         if let Self::String(s) = self {
             Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Determine if this object is a float.
+    pub fn is_array(&self) -> bool {
+        match self {
+            Self::Array(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Determine if the object is an Array and return a reference to underlying `Vec<Object>` if it
+    /// is.
+    pub fn array(&'a self) -> Option<&'a Vec<Object<'a>>> {
+        if let Self::Array(a) = self {
+            Some(a)
         } else {
             None
         }
@@ -137,6 +190,7 @@ impl<'a> Object<'a> {
             || self.data().is_some() && other.data().is_some()
             || self.boolean().is_some() && other.boolean().is_some()
             || self.string().is_some() && other.string().is_some()
+            || self.array().is_some() && other.array().is_some()
     }
 
     /// Attempt to create a primitive `Object` from a `Token`
@@ -165,6 +219,18 @@ pub enum Variable<'a> {
     /// This variant represents a switch between scopes and is used to determine what part of the
     /// stack to keep what what part to remove.
     StackDivider(Option<ScopeType>),
+
+    /// Represents an imported module
+    Module(Node<'a>),
+    
+    /// Represents a return value
+    Return(Option<Object<'a>>),
+
+    /// Represent the break keyword
+    Break,
+
+    /// Represents the continue keyword
+    Continue
 }
 
 impl<'a> Variable<'a> {
@@ -178,7 +244,8 @@ impl<'a> Variable<'a> {
         match self {
             Self::Var { name, .. } => Some(name.clone()),
             Self::Datatype { name, .. } => Some(name.clone()),
-            Self::StackDivider(_) => None,
+            Self::Module(Node { ntype: NodeType::Root { name, .. }, .. }) => Some(name.clone()),
+            _ => None,
         }
     }
 
@@ -189,15 +256,25 @@ impl<'a> Variable<'a> {
             dt,
         }
     }
+
+    /// Checks if this is a `Return`, `Break`, or `Continue`
+    // Poorly named. sosumi
+    pub fn is_stopper(&self) -> bool {
+        match self {
+            Self::Return(_) | Self::Break | Self::Continue => true,
+            _ => false,
+        }
+    }
 }
 
 /// # ScopeType
 /// This represents any of the kinds of dividers there are. This is used to determine how far back
 /// to pop off the stack when a scope ends or a `return` statement is encountered.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum ScopeType {
     /// Represents a function scope
-    Function,
+    /// The `Vec` is the path to the called function.
+    Function(Vec<String>),
 
     /// Represents a loop scope
     Loop,

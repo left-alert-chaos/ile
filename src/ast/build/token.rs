@@ -6,6 +6,8 @@
 //! This module is private because it shouldn't be necessary if you are implementing the interpreter
 //! inside a preexisting application.
 
+use crate::*;
+
 use std::fmt;
 
 /// # Token
@@ -15,13 +17,14 @@ use std::fmt;
 pub struct Token {
     pub ttype: TokenType,
     pub line: u64,
+    pub file: Option<String>,
 }
 
 impl Token {
-    pub fn from(value: String, line: u64) -> Result<Self, String> {
-        let ttype = TokenType::from(value)?;
+    pub fn from(value: String, line: u64, file: Option<String>,) -> Result<Self, Error> {
+        let ttype = TokenType::from(value, file.clone().unwrap_or(String::from("unknown")))?;
 
-        Ok(Self { ttype, line })
+        Ok(Self { ttype, line, file })
     }
 }
 
@@ -92,6 +95,12 @@ pub enum TokenType {
     /// A token for reversing a boolean value (!)
     Not,
 
+    /// A token for a logical and gate (&&)
+    And,
+
+    /// A token for a logical or gate (||)
+    Or,
+
     /// A token for string literals
     String(String),
 
@@ -134,6 +143,8 @@ impl fmt::Display for TokenType {
             Self::Equality => "Equality (double equals sign)".to_string(),
             Self::NotEqualTo => "NotEqualTo".to_string(),
             Self::Not => "Not".to_string(),
+            Self::And => "And".to_string(),
+            Self::Or => "Or".to_string(),
             Self::String(s) => format!("String '{s}'"),
             Self::Integer(i) => format!("Integer {i}"),
             Self::Float(f) => format!("Float {f}"),
@@ -145,10 +156,14 @@ impl fmt::Display for TokenType {
     }
 }
 
-impl TokenType {
+impl<'a> TokenType {
     /// Determine if the token is logical operator
     pub fn is_operator(&self) -> bool {
-        matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo)
+        matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo | Self::And | Self::Or)
+    }
+
+    pub fn is_boolean_operator(&self) -> bool {
+        matches!(self, Self::And | Self::Or)
     }
 
     /// Determine if two tokens have the same TokenType (ignoring inner values)
@@ -175,7 +190,20 @@ impl TokenType {
         self_ref == other_ref
     }
 
-    fn from(mut value: String) -> Result<Self, String> {
+    // This took waaaay too long to write because of stupid lifetime errors.
+    /// Check if two operator arms are the correct classifications to use this operator
+    pub fn arms_are_correct(&self, arm1: &Object<'a>, arm2: &Object<'a>) -> bool {
+        if self.is_boolean_operator() {
+            return arm1.boolean().is_some() && arm2.boolean().is_some();
+        }
+
+        match self {
+            Self::Addition => arm1.boolean().is_none() && ((arm1.is_array() && arm2.is_array()) || (arm1.is_data() && arm2.is_data()) || (arm1.float().is_some() && arm2.float().is_some()) || (arm1.is_integer() && arm2.is_integer())),
+            _ => (arm1.integer().is_some() && arm2.integer().is_some()) || (arm1.float().is_some() && arm2.float().is_some()) || (arm1.is_string() && arm2.is_string())
+        }
+    }
+
+    fn from(mut value: String, file: String) -> Result<Self, Error> {
         let len = value.len();
 
         // Determine if it's a single-character token
@@ -208,6 +236,8 @@ impl TokenType {
             "<=" => return Ok(Self::LessThanOrEqualTo),
             "==" => return Ok(Self::Equality),
             "!=" => return Ok(Self::NotEqualTo),
+            "&&" => return Ok(Self::And),
+            "||" => return Ok(Self::Or),
             "false" => return Ok(Self::Boolean(false)),
             "true" => return Ok(Self::Boolean(true)),
             _ => {}
@@ -216,9 +246,12 @@ impl TokenType {
         if value.starts_with('"') && value.ends_with('"') {
             // check validity
             if len < 2 {
-                return Err(String::from(
-                    "invalid string literal due to odd number of quotation marks",
-                ));
+                return Err(Error {
+                    message: String::from("invalid string literal due to odd number of quotation marks"),
+                    location: PipelineLocation::Tokenization,
+                    file,
+                    token: None,
+                });
             }
 
             // Remove quotes
@@ -238,7 +271,7 @@ impl TokenType {
 /// # tokenize
 /// This function processes a piece of code into a `Vec<TokenType>` object. This is the first step of
 /// interpretation.
-pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
+pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>, Error> {
     let code = code.to_string();
     let mut tokens = Vec::new();
 
@@ -255,9 +288,12 @@ pub fn tokenize(code: impl ToString) -> Result<Vec<Token>, String> {
         }
 
         // Attempt to tokenize buffer
-        match Token::from(b.clone(), line) {
+        match Token::from(b.clone(), line, file.clone()) {
             Ok(token) => tokens.push(token),
-            Err(reason) => return Err(reason),
+            Err(reason) => {
+                println!("Returning error from tokenize()");
+                return Err(reason);
+            }
         }
         b.clear();
         Ok(())
@@ -360,7 +396,7 @@ mod tests {
 
     // Helper to extract TokenType
     fn token_types(code: impl ToString) -> Result<Vec<TokenType>, String> {
-        let tokens = tokenize(code)?;
+        let tokens = tokenize(code, None)?;
         let mut types = Vec::new();
         for token in tokens {
             types.push(token.ttype);
@@ -375,6 +411,7 @@ mod tests {
 
         15
             ",
+        None,
         )
         .unwrap();
         assert_eq!(token[0].line, 3);
@@ -382,7 +419,7 @@ mod tests {
 
     #[test]
     fn float() {
-        let token = tokenize("3.1415926535").unwrap()[0].clone();
+        let token = tokenize("3.1415926535", None).unwrap()[0].clone();
         assert_eq!(token.ttype, TokenType::Float(3.1415926535));
     }
 

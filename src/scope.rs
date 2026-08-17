@@ -4,6 +4,7 @@
 //! swap out your scopes dynamically, which this module provides.
 
 use crate::*;
+use crate::error::Error as IleError;
 
 use std::{error::Error, fmt};
 
@@ -55,6 +56,29 @@ impl<'a> ScopeStack<'a> {
         self.push(Variable::Var { name: vname, value });
     }
 
+    /// Search for the object at a given path. Similar to `set()`, but used for objects that aren't
+    /// immediate children.
+    pub fn set_path(&mut self, path: &Vec<String>, value: Object<'a>, token: &Token) -> Result<(), IleError> {
+        let mut path = path.clone();
+        if path.len() == 1 {
+            self.set(path[0].clone(), value);
+            return Ok(());
+        } else if path.is_empty() {
+            // I don't think this is possible, but better safe than sorry.
+            return Err(IleError::new_runtime(Some(token.clone()), "can't assign to empty path"));
+        }
+        
+        // remove last segment and search for parent
+        let child_name = path.pop().unwrap();
+        let parent = self.path_lookup(&mut path, token)?;
+        let Object::Data(mut attrs) = parent.clone() else {
+            return Err(IleError::new_runtime(Some(token.clone()), "non-data objects can't have attributes assigned"));
+        };
+        attrs.insert(child_name, value);
+        *parent = Object::Data(attrs);
+        Ok(())
+    }
+
     /// Push a variable onto the end of the current stack.
     pub fn push(&mut self, var: Variable<'a>) {
         self.current_stack.push(var);
@@ -75,6 +99,85 @@ impl<'a> ScopeStack<'a> {
         }
 
         None
+    }
+
+    /// Similar to `lookup()`, but follow a path. It returns a mutable reference to an object that
+    /// it got by reading attributes of objects in the path.
+    /// For use in the AST walker.
+    pub fn path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<&mut Object<'a>, IleError> {
+        if path.is_empty() {
+            return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
+        }
+
+        // get the top-level object that everything else is an attribute of
+        let first = match self.lookup(&path[0]) {
+            Some(Variable::Var { value, .. }) => value,
+        
+            // If the looked up value is a node, recursively search its stack until you reach an
+            // object
+            Some(Variable::Module(node)) => {
+                let NodeType::Root { stack, .. } = &mut node.ntype else {
+                    unreachable!();
+                };
+                if path.len() > 1 {
+                    path.remove(0);
+                    stack.path_lookup(path, token)?
+                } else {
+                    return Err(IleError::new_runtime(Some(token.clone()), "modules aren't objects"));
+                }
+            }
+
+            None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),
+            _ => return Err(IleError::new_runtime(Some(token.clone()), "only variables can be looked up with paths")),
+        };
+        if path.len() == 1 {
+            return Ok(first);
+        }
+
+        let mut target = first;
+        let mut target_name = &path[0];
+        for segment in &path[1..] {
+            // check if target is data
+            let Object::Data(attributes) = target else {
+                return Err(IleError::new_runtime(Some(token.clone()), format!("object '{target_name}' isn't Data")));
+            };
+
+            target_name = segment;
+            match attributes.get_mut(segment.as_str()) {
+                Some(t) => target = t,
+                None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{target_name}' doesn't exist"))),
+            }
+        }
+
+        Ok(target)
+    }
+
+    /// Very similar to `path_lookup()`, but searches for a datatype declaration instead.
+    pub fn datatype_path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<DataType<'a>, IleError> {
+        if path.is_empty() {
+            return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
+        }
+
+        let name = path.pop().unwrap();
+
+        match self.lookup(&name) {
+            Some(Variable::Datatype { dt, .. }) => {
+                Ok(dt.clone())
+            }
+            Some(Variable::Module(node)) => {
+                let NodeType::Root { stack, .. } = &mut node.ntype else {
+                    unreachable!();
+                };
+                if path.len() > 1 {
+                    path.remove(0);
+                    stack.datatype_path_lookup(path, token)
+                } else {
+                    return Err(IleError::new_runtime(Some(token.clone()), "modules aren't usable as datatypes"));
+                }
+            }
+            Some(_) => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' is an object, not a datatype"))),
+            None => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist")))
+        }
     }
 
     /// In reversed order, count through scopes and remove the specified number. These scopes,
@@ -138,7 +241,7 @@ impl<'a> ScopeStack<'a> {
         Ok(())
     }
 
-    /// Pop until a `Variable::StackDivider(Some(ScopeType::Function))` is found. Used to remove unused values
+    /// Pop until a `Variable::StackDivider(Some(ScopeType::Function(_)))` is found. Used to remove unused values
     /// after a function returns.
     /// As with all other operations, if it runs out of variables to pop, it restores all of the
     /// impacted vars and returns an `Err()`
@@ -152,10 +255,44 @@ impl<'a> ScopeStack<'a> {
             };
 
             match var {
-                Variable::StackDivider(Some(ScopeType::Function)) => return Ok(()),
+                Variable::StackDivider(Some(ScopeType::Function(_))) => return Ok(()),
                 _ => bin.push(var),
             }
         }
+    }
+
+    /// Check if the last entry in the stack is a `Variable::Return`. If it is, return the inner
+    /// value of it.
+    pub fn is_return(&mut self) -> Option<Option<Object<'a>>> {
+        let last = self.current_stack.pop().unwrap();
+        if let Variable::Return(value) = last.clone() {
+            self.current_stack.push(last);
+            return Some(value);
+        } else {
+            self.current_stack.push(last);
+            return None;
+        }
+    }
+
+    /// Check if the last entry in the stack is a stopper.
+    pub fn is_stopper(&mut self) -> bool {
+        let last = self.current_stack.pop().unwrap();
+        let new = last.clone();
+        self.push(last);
+        new.is_stopper()
+    }
+
+    /// Check if the last entry in the stack is a `Continue`.
+    pub fn is_continue(&mut self) -> bool {
+        let last = self.current_stack.pop().unwrap();
+        let new = last.clone();
+        self.push(last);
+        matches!(new, Variable::Continue)
+    }
+
+    /// Remove the last element
+    pub fn pop(&mut self) -> Option<Variable<'a>> {
+        self.current_stack.pop()
     }
 
     /// Used by `restore_scopes()` and `cache_scopes()`
