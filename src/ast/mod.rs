@@ -181,4 +181,19 @@ mod tests {
         let ast = test_build(code);
         assert_eq!(test_var("x", ast).integer().unwrap(), 6);
     }
+
+    #[test]
+    fn break_loop() {
+        let code = "
+        let x = 0;
+        while true {
+            x = x + 1;
+            if x > 4 {
+                break;
+            }
+        }
+        ";
+        let ast = test_build(code);
+        assert_eq!(test_var("x", ast).integer().unwrap(), 5);
+    }
 }

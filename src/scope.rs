@@ -282,6 +282,19 @@ impl<'a> ScopeStack<'a> {
         new.is_stopper()
     }
 
+    /// Check if the last entry in the stack is a `Continue`.
+    pub fn is_continue(&mut self) -> bool {
+        let last = self.current_stack.pop().unwrap();
+        let new = last.clone();
+        self.push(last);
+        matches!(new, Variable::Continue)
+    }
+
+    /// Remove the last element
+    pub fn pop(&mut self) -> Option<Variable<'a>> {
+        self.current_stack.pop()
+    }
+
     /// Used by `restore_scopes()` and `cache_scopes()`
     fn restore_scope(&mut self, mut scope: Vec<Variable<'a>>) {
         while let Some(var) = scope.pop() {

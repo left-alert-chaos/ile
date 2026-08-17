@@ -45,7 +45,8 @@ impl<'a> Node<'a> {
             NodeType::If { .. } => self.walk_if(stack),
             NodeType::For { .. } => self.walk_for(stack),
             NodeType::While { .. } => self.walk_while(stack),
-            _ => Ok(None)
+            NodeType::Break => { stack.push(Variable::Break); Ok(None) }
+            NodeType::Continue => { stack.push(Variable::Continue); Ok(None) }
         }
     }
 
@@ -61,6 +62,7 @@ impl<'a> Node<'a> {
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
 
+            if stack.is_continue() { continue; }
             if stack.is_stopper() { break; }
         }
 
@@ -81,6 +83,7 @@ impl<'a> Node<'a> {
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
 
+            if stack.is_continue() { continue; }
             if stack.is_stopper() { break; }
         }
 
@@ -233,6 +236,14 @@ impl<'a> Node<'a> {
         let NodeType::Chain(calls) = self.ntype.clone() else {
             unreachable!();
         };
+
+        if calls.len() == 1 {
+            let mut first_call = calls[0].clone();
+            if first_call.is_stopper() {
+                first_call.walk(stack)?;
+                return Ok(None);
+            }
+        }
 
         for (index, call) in calls.iter().enumerate() {
             let mut call = call.clone();
@@ -473,6 +484,8 @@ impl<'a> Node<'a> {
         // The first option is whether to return; second is what, if any, to return
         let mut return_value = None;
 
+        let mut stopper = None;
+
         for mut statement in chains {
             statement.walk(stack)?;
 
@@ -482,6 +495,7 @@ impl<'a> Node<'a> {
             }
 
             if !is_function && stack.is_stopper() {
+                stopper = stack.pop();
                 break;
             }
         }
@@ -505,7 +519,10 @@ impl<'a> Node<'a> {
         // keep the return statement
         if !is_function && return_value.is_some() {
             stack.push(Variable::Return(return_value.clone().unwrap()));
-        } else {
+        }
+
+        if let Some(stop) = stopper {
+            stack.push(stop);
         }
 
         Ok(

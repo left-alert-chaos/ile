@@ -140,4 +140,9 @@ impl<'a> Node<'a>{
             statements: statements.clone()
         };
     }
+
+    /// Check if this node creates a stopper on the stack
+    pub fn is_stopper(&self) -> bool {
+        matches!(self.ntype, NodeType::Continue | NodeType::Break | NodeType::Return(_))
+    }
 }
