@@ -62,8 +62,13 @@ impl<'a> Node<'a> {
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
 
-            if stack.is_continue() { continue; }
-            if stack.is_stopper() { break; }
+            if stack.is_continue() { stack.pop(); continue; }
+            if stack.is_stopper() { 
+                if !stack.is_return().is_some() {
+                    stack.pop();
+                }
+                break;
+            }
         }
 
         Ok(None)
@@ -83,8 +88,13 @@ impl<'a> Node<'a> {
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
 
-            if stack.is_continue() { continue; }
-            if stack.is_stopper() { break; }
+            if stack.is_continue() { stack.pop(); continue; }
+            if stack.is_stopper() { 
+                if !stack.is_return().is_some() {
+                    stack.pop();
+                }
+                break;
+            }
         }
 
         Ok(None)
