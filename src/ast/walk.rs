@@ -195,6 +195,24 @@ impl<'a> Node<'a> {
                     _ => Err(Error::new_runtime(self.token.clone(), format!("can't divide {arm1_value:?} by {arm2_value:?}"))),
                 }
             }
+            TokenType::Equality => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 == arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 == arm2_value.float().unwrap()))),
+                    Object::Boolean(b1) => Ok(Some(Object::Boolean(b1 == arm2_value.boolean().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::Boolean(s1 == arm2_value.string().unwrap().clone()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't compare {arm1_value:?} to {arm2_value:?}"))),
+                }
+            }
+            TokenType::NotEqualTo => {
+                match arm1_value {
+                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 != arm2_value.integer().unwrap()))),
+                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 != arm2_value.float().unwrap()))),
+                    Object::Boolean(b1) => Ok(Some(Object::Boolean(b1 != arm2_value.boolean().unwrap()))),
+                    Object::String(s1) => Ok(Some(Object::Boolean(s1 != arm2_value.string().unwrap().clone()))),
+                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't compare {arm1_value:?} to {arm2_value:?}"))),
+                }
+            }
             _ => unreachable!(),
         }
     }
