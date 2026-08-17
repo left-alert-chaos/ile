@@ -1,6 +1,8 @@
 //! # interface
 //! This module holds logic to wrap Rust functions to be usable within Ile.
 
+pub mod module;
+
 use crate::*;
 
 /// # FunctionResult<'a>
