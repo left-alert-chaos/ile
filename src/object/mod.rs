@@ -22,7 +22,10 @@ pub use data::DataType;
 pub mod builtins;
 pub use builtins::*;
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt,
+};
 
 use crate::*;
 

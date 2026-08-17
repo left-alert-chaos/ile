@@ -27,6 +27,10 @@ fn main() -> Result<(), error::Error> {
                 else {
                     unreachable!();
                 };
+
+                // include the standard library
+                ile::ilestd::include::include(&mut stack);
+
                 ast.walk(&mut stack)?;
                 ast = Node {
                     token: None,
