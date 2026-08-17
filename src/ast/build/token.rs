@@ -21,7 +21,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn from(value: String, line: u64, file: Option<String>,) -> Result<Self, Error> {
+    pub fn from(value: String, line: u64, file: Option<String>) -> Result<Self, Error> {
         let ttype = TokenType::from(value, file.clone().unwrap_or(String::from("unknown")))?;
 
         Ok(Self { ttype, line, file })
@@ -159,7 +159,21 @@ impl fmt::Display for TokenType {
 impl<'a> TokenType {
     /// Determine if the token is logical operator
     pub fn is_operator(&self) -> bool {
-        matches!(self, Self::Addition | Self::Subtraction | Self::Multiplication | Self::Division | Self::Equality | Self::NotEqualTo | Self::LessThan | Self::GreaterThan | Self::LessThanOrEqualTo | Self::GreaterThanOrEqualTo | Self::And | Self::Or)
+        matches!(
+            self,
+            Self::Addition
+                | Self::Subtraction
+                | Self::Multiplication
+                | Self::Division
+                | Self::Equality
+                | Self::NotEqualTo
+                | Self::LessThan
+                | Self::GreaterThan
+                | Self::LessThanOrEqualTo
+                | Self::GreaterThanOrEqualTo
+                | Self::And
+                | Self::Or
+        )
     }
 
     pub fn is_boolean_operator(&self) -> bool {
@@ -175,7 +189,7 @@ impl<'a> TokenType {
             Self::Float(_) => &Self::Float(0.0),
             Self::Boolean(_) => &Self::Boolean(false),
             Self::Word(_) => &Self::Word(String::new()),
-            _ => self
+            _ => self,
         };
 
         let other_ref = match other {
@@ -184,7 +198,7 @@ impl<'a> TokenType {
             Self::Float(_) => &Self::Float(0.0),
             Self::Boolean(_) => &Self::Boolean(false),
             Self::Word(_) => &Self::Word(String::new()),
-            _ => other
+            _ => other,
         };
 
         self_ref == other_ref
@@ -198,8 +212,18 @@ impl<'a> TokenType {
         }
 
         match self {
-            Self::Addition => arm1.boolean().is_none() && ((arm1.is_array() && arm2.is_array()) || (arm1.is_data() && arm2.is_data()) || (arm1.float().is_some() && arm2.float().is_some()) || (arm1.is_integer() && arm2.is_integer())),
-            _ => (arm1.integer().is_some() && arm2.integer().is_some()) || (arm1.float().is_some() && arm2.float().is_some()) || (arm1.is_string() && arm2.is_string())
+            Self::Addition => {
+                arm1.boolean().is_none()
+                    && ((arm1.is_array() && arm2.is_array())
+                        || (arm1.is_data() && arm2.is_data())
+                        || (arm1.float().is_some() && arm2.float().is_some())
+                        || (arm1.is_integer() && arm2.is_integer()))
+            }
+            _ => {
+                (arm1.integer().is_some() && arm2.integer().is_some())
+                    || (arm1.float().is_some() && arm2.float().is_some())
+                    || (arm1.is_string() && arm2.is_string())
+            }
         }
     }
 
@@ -247,7 +271,9 @@ impl<'a> TokenType {
             // check validity
             if len < 2 {
                 return Err(Error {
-                    message: String::from("invalid string literal due to odd number of quotation marks"),
+                    message: String::from(
+                        "invalid string literal due to odd number of quotation marks",
+                    ),
                     location: PipelineLocation::Tokenization,
                     file,
                     token: None,
@@ -411,7 +437,7 @@ mod tests {
 
         15
             ",
-        None,
+            None,
         )
         .unwrap();
         assert_eq!(token[0].line, 3);

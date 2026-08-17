@@ -1,14 +1,14 @@
 //! # ast
 //! This module holds code to represent and build an Abstract Syntax Tree.
 
+pub mod arguments;
 pub mod build;
 pub mod node;
-pub mod arguments;
 mod walk;
 
+pub use arguments::*;
 pub use build::*;
 pub use node::*;
-pub use arguments::*;
 
 use crate::*;
 
@@ -20,12 +20,22 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, Error> {
 
     let chars = match std::fs::read(&path) {
         Ok(text) => text,
-        Err(_) => return Err(Error::new_parsing(None, format!("couldn't locate module '{path}'"))),
+        Err(_) => {
+            return Err(Error::new_parsing(
+                None,
+                format!("couldn't locate module '{path}'"),
+            ));
+        }
     };
 
     let text = match String::from_utf8(chars) {
         Ok(text) => text,
-        Err(_) => return Err(Error::new_parsing(None, format!("couldn't read module '{path}' as utf-8"))),
+        Err(_) => {
+            return Err(Error::new_parsing(
+                None,
+                format!("couldn't read module '{path}' as utf-8"),
+            ));
+        }
     };
 
     let tokens = tokenize(text, Some(path.clone()))?;
@@ -87,7 +97,7 @@ mod tests {
         let code = "func();
         let x = 5;
         func2();";
-        test_build(code);    
+        test_build(code);
     }
 
     #[test]

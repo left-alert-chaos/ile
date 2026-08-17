@@ -4,5 +4,5 @@
 
 mod parse;
 mod token;
-pub use token::*;
 pub use parse::*;
+pub use token::*;

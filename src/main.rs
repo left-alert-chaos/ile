@@ -5,7 +5,11 @@ fn main() -> Result<(), error::Error> {
     let args: Vec<String> = std::env::args().collect();
 
     if args.contains(&String::from("-i")) {
-        println!("Objects are {} bytes. Nodes are {} bytes.", size_of::<ile::Object>(), size_of::<ile::Node>());
+        println!(
+            "Objects are {} bytes. Nodes are {} bytes.",
+            size_of::<ile::Object>(),
+            size_of::<ile::Node>()
+        );
         return Ok(());
     }
 
@@ -15,13 +19,22 @@ fn main() -> Result<(), error::Error> {
         let time = Instant::now();
         match ile::ast_from_file(args[1].clone()) {
             Ok(mut ast) => {
-                let NodeType::Root { name, mut stack, statements } = ast.ntype.clone() else {
+                let NodeType::Root {
+                    name,
+                    mut stack,
+                    statements,
+                } = ast.ntype.clone()
+                else {
                     unreachable!();
                 };
                 ast.walk(&mut stack)?;
                 ast = Node {
                     token: None,
-                    ntype: NodeType::Root { name, stack, statements }
+                    ntype: NodeType::Root {
+                        name,
+                        stack,
+                        statements,
+                    },
                 };
                 println!("\n\nDone! AST:\n{ast:#?}");
             }

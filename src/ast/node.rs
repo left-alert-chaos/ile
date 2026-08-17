@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{Object, TokenType, Token};
+use crate::{Object, Token, TokenType};
 
 use std::collections::HashMap;
 
@@ -71,19 +71,19 @@ pub enum NodeType<'a> {
     /// Represents a `while` loop.
     While {
         condition: Box<Node<'a>>, // should be Chain
-        block: Box<Node<'a>>, // should be a CodeBlock
+        block: Box<Node<'a>>,     // should be a CodeBlock
     },
 
     /// Represents a `for` loop.
     For {
         condition: Box<Node<'a>>, // should be anything executable
-        block: Box<Node<'a>>, // should be a CodeBlock
+        block: Box<Node<'a>>,     // should be a CodeBlock
     },
 
     /// Represents an `if` block.
     If {
-        condition: Box<Node<'a>>, // should be Chain
-        block: Box<Node<'a>>, // should be a codeblock
+        condition: Box<Node<'a>>,           // should be Chain
+        block: Box<Node<'a>>,               // should be a codeblock
         else_clause: Option<Box<Node<'a>>>, // can be anything walkable
     },
 
@@ -113,7 +113,7 @@ pub struct Node<'a> {
     pub ntype: NodeType<'a>,
 }
 
-impl<'a> Node<'a>{
+impl<'a> Node<'a> {
     /// Create a new `Node<'a>Type::Root`
     pub fn new_root(name: String) -> Node<'a> {
         Node {
@@ -122,13 +122,18 @@ impl<'a> Node<'a>{
                 name,
                 stack: ScopeStack::new(),
                 statements: Vec::new(),
-            }
+            },
         }
     }
 
     /// Add a child to a `Node<'a>Type::Root` and panic if the called node isn't a `Root`
     pub fn root_add_child(&mut self, child: Self) {
-        let NodeType::Root { name, stack, mut statements } = self.ntype.clone() else {
+        let NodeType::Root {
+            name,
+            stack,
+            mut statements,
+        } = self.ntype.clone()
+        else {
             panic!("tried to call root_add_child on a non-root node!");
         };
 
@@ -137,12 +142,15 @@ impl<'a> Node<'a>{
         self.ntype = NodeType::Root {
             name: name.clone(),
             stack: stack.clone(),
-            statements: statements.clone()
+            statements: statements.clone(),
         };
     }
 
     /// Check if this node creates a stopper on the stack
     pub fn is_stopper(&self) -> bool {
-        matches!(self.ntype, NodeType::Continue | NodeType::Break | NodeType::Return(_))
+        matches!(
+            self.ntype,
+            NodeType::Continue | NodeType::Break | NodeType::Return(_)
+        )
     }
 }

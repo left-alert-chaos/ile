@@ -30,7 +30,11 @@ impl fmt::Debug for Executable<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::CodeBlock(n) => write!(f, "{n:?}"),
-            Self::Wrapper { signature, .. } => write!(f, "Executable::Wrapper with signature {}", debug_signature(signature)),
+            Self::Wrapper { signature, .. } => write!(
+                f,
+                "Executable::Wrapper with signature {}",
+                debug_signature(signature)
+            ),
         }
     }
 }

@@ -25,7 +25,9 @@ impl<'a> Node<'a> {
             }
             NodeType::Literal(value) => Ok(Some(value)),
             NodeType::ArrayLiteral(_) => self.walk_array(stack),
-            NodeType::CodeBlock { .. } => Ok(Some(Object::Function(Executable::CodeBlock(Box::new(self.clone()))))),
+            NodeType::CodeBlock { .. } => Ok(Some(Object::Function(Executable::CodeBlock(
+                Box::new(self.clone()),
+            )))),
             NodeType::Call { .. } => self.walk_call(stack),
             NodeType::Return(mut value) => {
                 let value = value.walk(stack)?;
@@ -34,36 +36,49 @@ impl<'a> Node<'a> {
             }
             NodeType::Chain(_) => self.walk_chain(stack),
             NodeType::DataType { .. } => self.walk_datatype(stack),
-            NodeType::Variable(mut path) => {
-                Ok(
-                    Some(
-                        stack.path_lookup(&mut path, &self.token.clone().unwrap())?.clone()
-                    )
-                )
-            }
+            NodeType::Variable(mut path) => Ok(Some(
+                stack
+                    .path_lookup(&mut path, &self.token.clone().unwrap())?
+                    .clone(),
+            )),
             NodeType::Operator(_, _, _) => self.walk_operator(stack),
             NodeType::If { .. } => self.walk_if(stack),
             NodeType::For { .. } => self.walk_for(stack),
             NodeType::While { .. } => self.walk_while(stack),
-            NodeType::Break => { stack.push(Variable::Break); Ok(None) }
-            NodeType::Continue => { stack.push(Variable::Continue); Ok(None) }
+            NodeType::Break => {
+                stack.push(Variable::Break);
+                Ok(None)
+            }
+            NodeType::Continue => {
+                stack.push(Variable::Continue);
+                Ok(None)
+            }
         }
     }
 
     fn walk_for(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::For { mut condition, block } = self.ntype.clone() else {
+        let NodeType::For {
+            mut condition,
+            block,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
         // repeat until condition doesn't return anything
         loop {
             let condition_result = condition.walk(stack)?;
-            if condition_result.is_none() { break; }
+            if condition_result.is_none() {
+                break;
+            }
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
 
-            if stack.is_continue() { stack.pop(); continue; }
-            if stack.is_stopper() { 
+            if stack.is_continue() {
+                stack.pop();
+                continue;
+            }
+            if stack.is_stopper() {
                 if !stack.is_return().is_some() {
                     stack.pop();
                 }
@@ -75,7 +90,11 @@ impl<'a> Node<'a> {
     }
 
     fn walk_while(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::While { mut condition, block } = self.ntype.clone() else {
+        let NodeType::While {
+            mut condition,
+            block,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
@@ -84,12 +103,19 @@ impl<'a> Node<'a> {
             let condition_result = condition.walk(stack)?;
 
             // check if it's false; any other value passes, including none
-            if let Some(result) = condition_result && result.boolean() == Some(false) { break; }
+            if let Some(result) = condition_result
+                && result.boolean() == Some(false)
+            {
+                break;
+            }
 
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
 
-            if stack.is_continue() { stack.pop(); continue; }
-            if stack.is_stopper() { 
+            if stack.is_continue() {
+                stack.pop();
+                continue;
+            }
+            if stack.is_stopper() {
                 if !stack.is_return().is_some() {
                     stack.pop();
                 }
@@ -101,12 +127,20 @@ impl<'a> Node<'a> {
     }
 
     fn walk_if(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::If { mut condition, block, else_clause } = self.ntype.clone() else {
+        let NodeType::If {
+            mut condition,
+            block,
+            else_clause,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
         let Some(Object::Boolean(condition_value)) = condition.walk(stack)? else {
-            return Err(Error::new_runtime(self.token.clone(), "only booleans can be if conditions"));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                "only booleans can be if conditions",
+            ));
         };
 
         // easiest logic in the history of programming languages
@@ -128,107 +162,180 @@ impl<'a> Node<'a> {
 
         let arm1_value = match arm1.walk(stack)? {
             Some(value) => value,
-            None => return Err(Error::new_runtime(self.token.clone(), "operator arm 1 didn't return a value")),
+            None => {
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    "operator arm 1 didn't return a value",
+                ));
+            }
         };
         let arm2_value = match arm2.walk(stack)? {
             Some(value) => value,
-            None => return Err(Error::new_runtime(self.token.clone(), "operator arm 2 didn't return a value")),
+            None => {
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    "operator arm 2 didn't return a value",
+                ));
+            }
         };
 
         if !operator.arms_are_correct(&arm1_value, &arm2_value) {
-            return Err(Error::new_runtime(self.token.clone(), format!("one or more arms is an incorrect classification for operator {operator};arms are {arm1_value:?} and {arm2_value:?}")));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                format!(
+                    "one or more arms is an incorrect classification for operator {operator};arms are {arm1_value:?} and {arm2_value:?}"
+                ),
+            ));
         }
 
         // actually do the operation
         // this is long and ugly, but it works, so who cares
         match operator {
-            TokenType::Or => Ok(Some(Object::Boolean(arm1_value.boolean().unwrap() || arm2_value.boolean().unwrap()))),
-            TokenType::And => Ok(Some(Object::Boolean(arm1_value.boolean().unwrap() && arm2_value.boolean().unwrap()))),
-            TokenType::GreaterThan => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 > arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 > arm2_value.float().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() > arm2_value.string().unwrap().len()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is greater than {arm2_value:?}"))),
+            TokenType::Or => Ok(Some(Object::Boolean(
+                arm1_value.boolean().unwrap() || arm2_value.boolean().unwrap(),
+            ))),
+            TokenType::And => Ok(Some(Object::Boolean(
+                arm1_value.boolean().unwrap() && arm2_value.boolean().unwrap(),
+            ))),
+            TokenType::GreaterThan => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Boolean(i1 > arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::LessThan => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 < arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 < arm2_value.float().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() < arm2_value.string().unwrap().len()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is less than {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Boolean(f1 > arm2_value.float().unwrap()))),
+                Object::String(s1) => Ok(Some(Object::Boolean(
+                    s1.len() > arm2_value.string().unwrap().len(),
+                ))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't determine if {arm1_value:?} is greater than {arm2_value:?}"),
+                )),
+            },
+            TokenType::LessThan => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Boolean(i1 < arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::GreaterThanOrEqualTo => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 >= arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 >= arm2_value.float().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() >= arm2_value.string().unwrap().len()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is greater than or equal to {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Boolean(f1 < arm2_value.float().unwrap()))),
+                Object::String(s1) => Ok(Some(Object::Boolean(
+                    s1.len() < arm2_value.string().unwrap().len(),
+                ))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't determine if {arm1_value:?} is less than {arm2_value:?}"),
+                )),
+            },
+            TokenType::GreaterThanOrEqualTo => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Boolean(i1 >= arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::LessThanOrEqualTo => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 <= arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 <= arm2_value.float().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::Boolean(s1.len() <= arm2_value.string().unwrap().len()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't determine if {arm1_value:?} is less than or equal to {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Boolean(f1 >= arm2_value.float().unwrap()))),
+                Object::String(s1) => Ok(Some(Object::Boolean(
+                    s1.len() >= arm2_value.string().unwrap().len(),
+                ))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!(
+                        "can't determine if {arm1_value:?} is greater than or equal to {arm2_value:?}"
+                    ),
+                )),
+            },
+            TokenType::LessThanOrEqualTo => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Boolean(i1 <= arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::Addition => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Integer(i1 + arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Float(f1 + arm2_value.float().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::String(s1 + arm2_value.string().unwrap()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't add {arm1_value:?} to {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Boolean(f1 <= arm2_value.float().unwrap()))),
+                Object::String(s1) => Ok(Some(Object::Boolean(
+                    s1.len() <= arm2_value.string().unwrap().len(),
+                ))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!(
+                        "can't determine if {arm1_value:?} is less than or equal to {arm2_value:?}"
+                    ),
+                )),
+            },
+            TokenType::Addition => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Integer(i1 + arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::Subtraction => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Integer(i1 - arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Float(f1 - arm2_value.float().unwrap()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't subtract {arm1_value:?} from {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Float(f1 + arm2_value.float().unwrap()))),
+                Object::String(s1) => Ok(Some(Object::String(s1 + arm2_value.string().unwrap()))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't add {arm1_value:?} to {arm2_value:?}"),
+                )),
+            },
+            TokenType::Subtraction => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Integer(i1 - arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::Multiplication => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Integer(i1 * arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Float(f1 * arm2_value.float().unwrap()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't multiply {arm1_value:?} by {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Float(f1 - arm2_value.float().unwrap()))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't subtract {arm1_value:?} from {arm2_value:?}"),
+                )),
+            },
+            TokenType::Multiplication => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Integer(i1 * arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::Division => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Float((i1 / arm2_value.integer().unwrap()) as f64))),
-                    Object::Float(f1) => Ok(Some(Object::Float(f1 / arm2_value.float().unwrap()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't divide {arm1_value:?} by {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Float(f1 * arm2_value.float().unwrap()))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't multiply {arm1_value:?} by {arm2_value:?}"),
+                )),
+            },
+            TokenType::Division => match arm1_value {
+                Object::Integer(i1) => Ok(Some(Object::Float(
+                    (i1 / arm2_value.integer().unwrap()) as f64,
+                ))),
+                Object::Float(f1) => Ok(Some(Object::Float(f1 / arm2_value.float().unwrap()))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't divide {arm1_value:?} by {arm2_value:?}"),
+                )),
+            },
+            TokenType::Equality => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Boolean(i1 == arm2_value.integer().unwrap())))
                 }
-            }
-            TokenType::Equality => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 == arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 == arm2_value.float().unwrap()))),
-                    Object::Boolean(b1) => Ok(Some(Object::Boolean(b1 == arm2_value.boolean().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::Boolean(s1 == arm2_value.string().unwrap().clone()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't compare {arm1_value:?} to {arm2_value:?}"))),
+                Object::Float(f1) => Ok(Some(Object::Boolean(f1 == arm2_value.float().unwrap()))),
+                Object::Boolean(b1) => {
+                    Ok(Some(Object::Boolean(b1 == arm2_value.boolean().unwrap())))
                 }
-            }
-            TokenType::NotEqualTo => {
-                match arm1_value {
-                    Object::Integer(i1) => Ok(Some(Object::Boolean(i1 != arm2_value.integer().unwrap()))),
-                    Object::Float(f1) => Ok(Some(Object::Boolean(f1 != arm2_value.float().unwrap()))),
-                    Object::Boolean(b1) => Ok(Some(Object::Boolean(b1 != arm2_value.boolean().unwrap()))),
-                    Object::String(s1) => Ok(Some(Object::Boolean(s1 != arm2_value.string().unwrap().clone()))),
-                    _ => Err(Error::new_runtime(self.token.clone(), format!("can't compare {arm1_value:?} to {arm2_value:?}"))),
+                Object::String(s1) => Ok(Some(Object::Boolean(
+                    s1 == arm2_value.string().unwrap().clone(),
+                ))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't compare {arm1_value:?} to {arm2_value:?}"),
+                )),
+            },
+            TokenType::NotEqualTo => match arm1_value {
+                Object::Integer(i1) => {
+                    Ok(Some(Object::Boolean(i1 != arm2_value.integer().unwrap())))
                 }
-            }
+                Object::Float(f1) => Ok(Some(Object::Boolean(f1 != arm2_value.float().unwrap()))),
+                Object::Boolean(b1) => {
+                    Ok(Some(Object::Boolean(b1 != arm2_value.boolean().unwrap())))
+                }
+                Object::String(s1) => Ok(Some(Object::Boolean(
+                    s1 != arm2_value.string().unwrap().clone(),
+                ))),
+                _ => Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("can't compare {arm1_value:?} to {arm2_value:?}"),
+                )),
+            },
             _ => unreachable!(),
         }
     }
 
     fn walk_datatype(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::DataType { name, mut attributes } = self.ntype.clone() else {
+        let NodeType::DataType {
+            name,
+            mut attributes,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
@@ -238,21 +345,24 @@ impl<'a> Node<'a> {
         for (attr_name, attr_value) in attributes.iter_mut() {
             let node_value = match attr_value.walk(stack)? {
                 Some(value) => value,
-                None => return Err(Error::new_runtime(self.token.clone(), format!("attribute '{attr_name}' of datatype '{name}' has no value"))),
+                None => {
+                    return Err(Error::new_runtime(
+                        self.token.clone(),
+                        format!("attribute '{attr_name}' of datatype '{name}' has no value"),
+                    ));
+                }
             };
             attribute_values.insert(attr_name.clone(), node_value);
         }
 
         // create a stack entry of the datatype
-        stack.push(
-            Variable::Datatype {
-                name: name.clone(),
-                dt: DataType {
-                    name,
-                    attributes: attribute_values,
-                }
-            }
-        );
+        stack.push(Variable::Datatype {
+            name: name.clone(),
+            dt: DataType {
+                name,
+                attributes: attribute_values,
+            },
+        });
 
         Ok(None)
     }
@@ -280,30 +390,49 @@ impl<'a> Node<'a> {
                 continue;
             };
             let Object::Data(mut attrs) = value else {
-                return Err(Error::new_runtime(self.token.clone(), format!("object {value:?} isn't data, so it can't be chained")));
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!("object {value:?} isn't data, so it can't be chained"),
+                ));
             };
-            
+
             // determine what to do with call or variable
             match call.ntype {
                 NodeType::Call { arguments, path } => {
                     let name = path[0].clone();
                     let Some(function) = attrs.get_mut(&name) else {
-                        return Err(Error::new_runtime(call.token.clone(), format!("attribute '{name}' doesn't exist, so it can't be called")));
+                        return Err(Error::new_runtime(
+                            call.token.clone(),
+                            format!("attribute '{name}' doesn't exist, so it can't be called"),
+                        ));
                     };
                     let Object::Function(executable) = function else {
-                        return Err(Error::new_runtime(call.token.clone(), format!("attribute '{name}' isn't a function, so it can't be called")));
+                        return Err(Error::new_runtime(
+                            call.token.clone(),
+                            format!("attribute '{name}' isn't a function, so it can't be called"),
+                        ));
                     };
 
                     // determine how to call the function
                     match executable {
                         // re-write the call logic
                         Executable::CodeBlock(node) => {
-                            carried_value = node.walk_block(walk_arguments(arguments, stack)?, stack, &Vec::new(), true)?;
+                            carried_value = node.walk_block(
+                                walk_arguments(arguments, stack)?,
+                                stack,
+                                &Vec::new(),
+                                true,
+                            )?;
 
                             // don't error if it's the last segment and it wasn't trying to return
                             // anything
                             if carried_value.is_none() && index != calls.len() - 1 {
-                                return Err(Error::new_runtime(call.token.clone(), format!("function '{name}' didn't return anything, so can't be chained")))
+                                return Err(Error::new_runtime(
+                                    call.token.clone(),
+                                    format!(
+                                        "function '{name}' didn't return anything, so can't be chained"
+                                    ),
+                                ));
                             }
                         }
                         Executable::Wrapper { .. } => todo!(),
@@ -313,10 +442,18 @@ impl<'a> Node<'a> {
                     if let Some(value) = attrs.get(&path[0]) {
                         carried_value = Some(value.clone());
                     } else {
-                        return Err(Error::new_runtime(call.token.clone(), format!("chain's carried value has no attribute '{}'", path[0])));
+                        return Err(Error::new_runtime(
+                            call.token.clone(),
+                            format!("chain's carried value has no attribute '{}'", path[0]),
+                        ));
                     }
                 }
-                _ => return Err(Error::new_runtime(call.token.clone(), "only calls and variable lookups are allowed to be chained")),
+                _ => {
+                    return Err(Error::new_runtime(
+                        call.token.clone(),
+                        "only calls and variable lookups are allowed to be chained",
+                    ));
+                }
             }
         }
 
@@ -325,17 +462,30 @@ impl<'a> Node<'a> {
 
     /// Walk an assignment
     fn walk_assignment(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::Assignment { mut path, mut value, create } = self.ntype.clone() else {
+        let NodeType::Assignment {
+            mut path,
+            mut value,
+            create,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
         let Some(name) = path.pop() else {
-            return Err(Error::new_runtime(self.token.clone(), "can't assign to empty path"));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                "can't assign to empty path",
+            ));
         };
 
         let walk_res = match value.walk(stack)? {
             Some(res) => res,
-            None => return Err(Error::new_runtime(self.token.clone(), "assigned node returned nothing")),
+            None => {
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    "assigned node returned nothing",
+                ));
+            }
         };
 
         if path.is_empty() {
@@ -346,14 +496,23 @@ impl<'a> Node<'a> {
                 if let Ok(variable) = stack.path_lookup(&mut path, &self.token.clone().unwrap()) {
                     *variable = walk_res.clone();
                 } else {
-                    return Err(Error::new_runtime(self.token.clone(), format!("can't re-assign to variable '{name}' that doesn't exist")));
+                    return Err(Error::new_runtime(
+                        self.token.clone(),
+                        format!("can't re-assign to variable '{name}' that doesn't exist"),
+                    ));
                 }
             }
         } else {
             // assign as an attribute
             let obj = stack.path_lookup(&mut path.clone(), &self.token.clone().unwrap())?;
             let Object::Data(attrs) = obj else {
-                return Err(Error::new_runtime(self.token.clone(), format!("can't assign attribute to non-data object '{}.{name}'", debug_path(&path))));
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!(
+                        "can't assign attribute to non-data object '{}.{name}'",
+                        debug_path(&path)
+                    ),
+                ));
             };
             attrs.insert(name, walk_res.clone());
             *obj = Object::Data(attrs.clone());
@@ -371,13 +530,23 @@ impl<'a> Node<'a> {
             Ok(ast) => ast,
             // add file to error
             Err(mut reason) => {
-                reason.file = self.token.clone().unwrap().file.unwrap_or(String::from("unknown"));
+                reason.file = self
+                    .token
+                    .clone()
+                    .unwrap()
+                    .file
+                    .unwrap_or(String::from("unknown"));
                 return Err(reason);
             }
         };
 
         // this uses waaaaay too much memory, but it's what I can come up with
-        let NodeType::Root { name, mut stack, statements } = ast.ntype.clone() else {
+        let NodeType::Root {
+            name,
+            mut stack,
+            statements,
+        } = ast.ntype.clone()
+        else {
             unreachable!();
         };
         ast.walk(&mut stack)?;
@@ -406,7 +575,12 @@ impl<'a> Node<'a> {
         for mut child in children {
             match child.walk(stack)? {
                 Some(res) => results.push(res),
-                None => return Err(Error::new_runtime(child.token.clone(), "array child doesn't return anything")),
+                None => {
+                    return Err(Error::new_runtime(
+                        child.token.clone(),
+                        "array child doesn't return anything",
+                    ));
+                }
             }
         }
 
@@ -421,31 +595,33 @@ impl<'a> Node<'a> {
         let arg_objects = walk_arguments(arguments, stack)?;
 
         // check if there's an available datatype
-        if let Ok(dt) = stack.datatype_path_lookup(&mut path.clone(), &self.token.clone().unwrap()) {
-            return Ok(
-                Some(
-                    Object::Data(dt.attributes)
-                )
-            );
+        if let Ok(dt) = stack.datatype_path_lookup(&mut path.clone(), &self.token.clone().unwrap())
+        {
+            return Ok(Some(Object::Data(dt.attributes)));
         }
 
         // get function
         let func = stack.path_lookup(&mut path.clone(), &self.token.clone().unwrap())?;
         let Object::Function(executable) = func.clone() else {
-            return Err(Error::new_runtime(self.token.clone(), format!("object '{}' isn't a Function", debug_path(&path))));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                format!("object '{}' isn't a Function", debug_path(&path)),
+            ));
         };
 
         match executable {
-            Executable::CodeBlock(block) => {
-                block.walk_block(arg_objects, stack, &path, true)
-            }
-            Executable::Wrapper { signature, func } => {
-                func(signature)
-            }
+            Executable::CodeBlock(block) => block.walk_block(arg_objects, stack, &path, true),
+            Executable::Wrapper { signature, func } => func(signature),
         }
     }
 
-    fn walk_block(&self, mut args: Vec<Object<'a>>, stack: &mut scope::ScopeStack<'a>, path: &Vec<String>, is_function: bool) -> FunctionResult<'a> {
+    fn walk_block(
+        &self,
+        mut args: Vec<Object<'a>>,
+        stack: &mut scope::ScopeStack<'a>,
+        path: &Vec<String>,
+        is_function: bool,
+    ) -> FunctionResult<'a> {
         let path = path.clone();
         let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
             unreachable!();
@@ -465,15 +641,17 @@ impl<'a> Node<'a> {
                 // set automatic self value
                 if signature[0].as_str() == "self" && signature_len - args_len == 1 {
                     // check that this is, in fact, a method
-                    if path.len() > 0 && let Ok(self_object) = stack.path_lookup(&mut self_path.clone(), &self.token.clone().unwrap()) {
+                    if path.len() > 0
+                        && let Ok(self_object) =
+                            stack.path_lookup(&mut self_path.clone(), &self.token.clone().unwrap())
+                    {
                         set_self = true;
-                        args.insert(
-                            0,
-                            self_object.clone(),
-                        );
+                        args.insert(0, self_object.clone());
                         String::new()
                     } else {
-                        format!("missing one argument; the first argument is 'self', which is confusing because this isn't a method")
+                        format!(
+                            "missing one argument; the first argument is 'self', which is confusing because this isn't a method"
+                        )
                     }
                 } else {
                     format!("missing {} arguments", signature_len - args_len)
@@ -487,25 +665,17 @@ impl<'a> Node<'a> {
         }
 
         // add a StackDivider
-        stack.push(
-            Variable::StackDivider( 
-                Some(
-                    ScopeType::Function(
-                        path.clone()
-                    )
-                )
-            )
-        );
+        stack.push(Variable::StackDivider(Some(ScopeType::Function(
+            path.clone(),
+        ))));
 
         // clone arguments onto stack
         for (index, arg) in args.iter().enumerate() {
             let name = signature[index].clone();
-            stack.push(
-                Variable::Var {
-                    name,
-                    value: arg.clone(),
-                }
-            );
+            stack.push(Variable::Var {
+                name,
+                value: arg.clone(),
+            });
         }
 
         // Option<Option<Object>>
@@ -532,13 +702,15 @@ impl<'a> Node<'a> {
         if set_self {
             let self_value = stack.lookup(&String::from("self")).unwrap();
             let Variable::Var { value, .. } = self_value.clone() else {
-                return Err(Error::new_runtime(self.token.clone(), format!("method '{}' somehow returned with self as a non-variable stack entry; this is confusing and frustrating and shouldn't even be possible", debug_path(&self_path))));
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!(
+                        "method '{}' somehow returned with self as a non-variable stack entry; this is confusing and frustrating and shouldn't even be possible",
+                        debug_path(&self_path)
+                    ),
+                ));
             };
-            stack.set_path(
-                &mut self_path,
-                value,
-                &self.token.clone().unwrap(),
-            )?;
+            stack.set_path(&mut self_path, value, &self.token.clone().unwrap())?;
         }
 
         // Remove variables from function's scope
@@ -553,12 +725,10 @@ impl<'a> Node<'a> {
             stack.push(stop);
         }
 
-        Ok(
-            match return_value {
-                None => None,
-                Some(value) => value,
-            }
-        )
+        Ok(match return_value {
+            None => None,
+            Some(value) => value,
+        })
     }
 }
 

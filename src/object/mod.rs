@@ -200,7 +200,10 @@ impl<'a> Object<'a> {
             TokenType::Integer(i) => Ok(Self::Integer(i)),
             TokenType::Float(f) => Ok(Self::Float(f)),
             TokenType::Boolean(b) => Ok(Self::Boolean(b)),
-            _ => Err(format!("only String, Integer, Float, and Boolean tokens can become objects, not {:?}", token.ttype)),
+            _ => Err(format!(
+                "only String, Integer, Float, and Boolean tokens can become objects, not {:?}",
+                token.ttype
+            )),
         }
     }
 }
@@ -222,7 +225,7 @@ pub enum Variable<'a> {
 
     /// Represents an imported module
     Module(Node<'a>),
-    
+
     /// Represents a return value
     Return(Option<Object<'a>>),
 
@@ -230,7 +233,7 @@ pub enum Variable<'a> {
     Break,
 
     /// Represents the continue keyword
-    Continue
+    Continue,
 }
 
 impl<'a> Variable<'a> {
@@ -244,7 +247,10 @@ impl<'a> Variable<'a> {
         match self {
             Self::Var { name, .. } => Some(name.clone()),
             Self::Datatype { name, .. } => Some(name.clone()),
-            Self::Module(Node { ntype: NodeType::Root { name, .. }, .. }) => Some(name.clone()),
+            Self::Module(Node {
+                ntype: NodeType::Root { name, .. },
+                ..
+            }) => Some(name.clone()),
             _ => None,
         }
     }

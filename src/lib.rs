@@ -4,6 +4,6 @@ pub mod object;
 pub mod scope;
 
 pub use ast::*;
-pub use object::*;
 pub use error::*;
+pub use object::*;
 pub use scope::*;

@@ -3,8 +3,8 @@
 //! program. When you jump to another area that uses different variables, you need to be able to
 //! swap out your scopes dynamically, which this module provides.
 
-use crate::*;
 use crate::error::Error as IleError;
+use crate::*;
 
 use std::{error::Error, fmt};
 
@@ -58,21 +58,32 @@ impl<'a> ScopeStack<'a> {
 
     /// Search for the object at a given path. Similar to `set()`, but used for objects that aren't
     /// immediate children.
-    pub fn set_path(&mut self, path: &Vec<String>, value: Object<'a>, token: &Token) -> Result<(), IleError> {
+    pub fn set_path(
+        &mut self,
+        path: &Vec<String>,
+        value: Object<'a>,
+        token: &Token,
+    ) -> Result<(), IleError> {
         let mut path = path.clone();
         if path.len() == 1 {
             self.set(path[0].clone(), value);
             return Ok(());
         } else if path.is_empty() {
             // I don't think this is possible, but better safe than sorry.
-            return Err(IleError::new_runtime(Some(token.clone()), "can't assign to empty path"));
+            return Err(IleError::new_runtime(
+                Some(token.clone()),
+                "can't assign to empty path",
+            ));
         }
-        
+
         // remove last segment and search for parent
         let child_name = path.pop().unwrap();
         let parent = self.path_lookup(&mut path, token)?;
         let Object::Data(mut attrs) = parent.clone() else {
-            return Err(IleError::new_runtime(Some(token.clone()), "non-data objects can't have attributes assigned"));
+            return Err(IleError::new_runtime(
+                Some(token.clone()),
+                "non-data objects can't have attributes assigned",
+            ));
         };
         attrs.insert(child_name, value);
         *parent = Object::Data(attrs);
@@ -104,15 +115,22 @@ impl<'a> ScopeStack<'a> {
     /// Similar to `lookup()`, but follow a path. It returns a mutable reference to an object that
     /// it got by reading attributes of objects in the path.
     /// For use in the AST walker.
-    pub fn path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<&mut Object<'a>, IleError> {
+    pub fn path_lookup(
+        &mut self,
+        path: &mut Vec<String>,
+        token: &Token,
+    ) -> Result<&mut Object<'a>, IleError> {
         if path.is_empty() {
-            return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
+            return Err(IleError::new_runtime(
+                Some(token.clone()),
+                "empty path for lookup",
+            ));
         }
 
         // get the top-level object that everything else is an attribute of
         let first = match self.lookup(&path[0]) {
             Some(Variable::Var { value, .. }) => value,
-        
+
             // If the looked up value is a node, recursively search its stack until you reach an
             // object
             Some(Variable::Module(node)) => {
@@ -123,12 +141,25 @@ impl<'a> ScopeStack<'a> {
                     path.remove(0);
                     stack.path_lookup(path, token)?
                 } else {
-                    return Err(IleError::new_runtime(Some(token.clone()), "modules aren't objects"));
+                    return Err(IleError::new_runtime(
+                        Some(token.clone()),
+                        "modules aren't objects",
+                    ));
                 }
             }
 
-            None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{}' doesn't exist", &path[0]))),
-            _ => return Err(IleError::new_runtime(Some(token.clone()), "only variables can be looked up with paths")),
+            None => {
+                return Err(IleError::new_runtime(
+                    Some(token.clone()),
+                    format!("object '{}' doesn't exist", &path[0]),
+                ));
+            }
+            _ => {
+                return Err(IleError::new_runtime(
+                    Some(token.clone()),
+                    "only variables can be looked up with paths",
+                ));
+            }
         };
         if path.len() == 1 {
             return Ok(first);
@@ -139,13 +170,21 @@ impl<'a> ScopeStack<'a> {
         for segment in &path[1..] {
             // check if target is data
             let Object::Data(attributes) = target else {
-                return Err(IleError::new_runtime(Some(token.clone()), format!("object '{target_name}' isn't Data")));
+                return Err(IleError::new_runtime(
+                    Some(token.clone()),
+                    format!("object '{target_name}' isn't Data"),
+                ));
             };
 
             target_name = segment;
             match attributes.get_mut(segment.as_str()) {
                 Some(t) => target = t,
-                None => return Err(IleError::new_runtime(Some(token.clone()), format!("object '{target_name}' doesn't exist"))),
+                None => {
+                    return Err(IleError::new_runtime(
+                        Some(token.clone()),
+                        format!("object '{target_name}' doesn't exist"),
+                    ));
+                }
             }
         }
 
@@ -153,17 +192,22 @@ impl<'a> ScopeStack<'a> {
     }
 
     /// Very similar to `path_lookup()`, but searches for a datatype declaration instead.
-    pub fn datatype_path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<DataType<'a>, IleError> {
+    pub fn datatype_path_lookup(
+        &mut self,
+        path: &mut Vec<String>,
+        token: &Token,
+    ) -> Result<DataType<'a>, IleError> {
         if path.is_empty() {
-            return Err(IleError::new_runtime(Some(token.clone()), "empty path for lookup"));
+            return Err(IleError::new_runtime(
+                Some(token.clone()),
+                "empty path for lookup",
+            ));
         }
 
         let name = path.pop().unwrap();
 
         match self.lookup(&name) {
-            Some(Variable::Datatype { dt, .. }) => {
-                Ok(dt.clone())
-            }
+            Some(Variable::Datatype { dt, .. }) => Ok(dt.clone()),
             Some(Variable::Module(node)) => {
                 let NodeType::Root { stack, .. } = &mut node.ntype else {
                     unreachable!();
@@ -172,11 +216,20 @@ impl<'a> ScopeStack<'a> {
                     path.remove(0);
                     stack.datatype_path_lookup(path, token)
                 } else {
-                    return Err(IleError::new_runtime(Some(token.clone()), "modules aren't usable as datatypes"));
+                    return Err(IleError::new_runtime(
+                        Some(token.clone()),
+                        "modules aren't usable as datatypes",
+                    ));
                 }
             }
-            Some(_) => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' is an object, not a datatype"))),
-            None => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist")))
+            Some(_) => Err(IleError::new_runtime(
+                Some(token.clone()),
+                format!("path segment '{name}' is an object, not a datatype"),
+            )),
+            None => Err(IleError::new_runtime(
+                Some(token.clone()),
+                format!("path segment '{name}' doesn't exist"),
+            )),
         }
     }
 

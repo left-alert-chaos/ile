@@ -2,7 +2,7 @@
 //! This module holds code to convert a list of `Token`s into a walkable Abstract Syntax Tree. It's
 //! mostly in an `impl` block for `Node`.
 
-use crate::{Node, NodeType, Token, TokenType, error::Error, Object};
+use crate::{Node, NodeType, Object, Token, TokenType, error::Error};
 
 use std::collections::HashMap;
 
@@ -50,23 +50,22 @@ impl<'a> Parser {
 
         // literals
         if let Ok(obj) = Object::from_token(token.clone()) {
-            if let Some(next) = self.peek_next() && next.ttype.is_operator() {
+            if let Some(next) = self.peek_next()
+                && next.ttype.is_operator()
+            {
                 self.index -= 1;
                 return self.parse_misc(None);
             } else {
                 return Ok(Node {
                     ntype: NodeType::Literal(obj),
-                    token: Some(token)
+                    token: Some(token),
                 });
             }
         }
 
         // if the things before this didn't work, this can only be a word
         let TokenType::Word(word) = token.ttype.clone() else {
-            return Err(Error::new_parsing(
-                Some(token.clone()),
-                "expected word",
-            ));
+            return Err(Error::new_parsing(Some(token.clone()), "expected word"));
         };
 
         // determine node type from first token
@@ -79,16 +78,18 @@ impl<'a> Parser {
             "import" => self.parse_import(),
             "return" => self.parse_return(),
             "break" | "continue" => self.parse_control_flow(),
-            _ => {
-                self.parse_misc(Some(word))
-            }
+            _ => self.parse_misc(Some(word)),
         }
     }
 
     /// Returns a `Break` or `Continue`
     fn parse_control_flow(&mut self) -> Result<Node<'a>, Error> {
         self.index -= 1;
-        let Token { ttype: TokenType::Word(word), .. } = self.next().unwrap() else {
+        let Token {
+            ttype: TokenType::Word(word),
+            ..
+        } = self.next().unwrap()
+        else {
             unreachable!();
         };
         let ntype = match word.as_str() {
@@ -96,26 +97,24 @@ impl<'a> Parser {
             "continue" => NodeType::Continue,
             _ => unreachable!(),
         };
-        if let Some(next) = self.peek_next() && next.ttype == TokenType::ChainEnd {
+        if let Some(next) = self.peek_next()
+            && next.ttype == TokenType::ChainEnd
+        {
             self.index += 1;
         }
-        Ok(
-            Node {
-                token: self.current(),
-                ntype,
-            }
-        )
+        Ok(Node {
+            token: self.current(),
+            ntype,
+        })
     }
 
     fn parse_return(&mut self) -> Result<Node<'a>, Error> {
         let value = self.parse_individual_node()?;
         self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
-        Ok(
-            Node {
-                token: self.current(),
-                ntype: NodeType::Return(Box::new(value)),
-            }
-        )
+        Ok(Node {
+            token: self.current(),
+            ntype: NodeType::Return(Box::new(value)),
+        })
     }
 
     // called after unexpected open paren that isn't after a path
@@ -127,7 +126,15 @@ impl<'a> Parser {
                 TokenType::Word(w) => signature.push(w),
                 TokenType::Comma => {}
                 TokenType::CloseParen => break,
-                _ => return Err(Error::new_parsing(Some(token.clone()), format!("unexpected {} token while parsing function signature; expected Comma, CloseParen, or Word", token.ttype))),
+                _ => {
+                    return Err(Error::new_parsing(
+                        Some(token.clone()),
+                        format!(
+                            "unexpected {} token while parsing function signature; expected Comma, CloseParen, or Word",
+                            token.ttype
+                        ),
+                    ));
+                }
             }
         }
 
@@ -136,11 +143,13 @@ impl<'a> Parser {
         // is chains
         self.expect_single_char(TokenType::OpenBrace, "while parsing function definition")?;
         match self.parse_block() {
-            Ok(Node { ntype: NodeType::CodeBlock { chains, .. }, .. }) => {
-                Ok(
-                    Node { ntype: NodeType::CodeBlock { chains, signature }, token: self.current() }
-                )
-            }
+            Ok(Node {
+                ntype: NodeType::CodeBlock { chains, .. },
+                ..
+            }) => Ok(Node {
+                ntype: NodeType::CodeBlock { chains, signature },
+                token: self.current(),
+            }),
             Err(e) => Err(e),
             _ => unreachable!(),
         }
@@ -149,27 +158,30 @@ impl<'a> Parser {
     /// parse an if statement, including and else
     fn parse_if(&mut self) -> Result<Node<'a>, Error> {
         let condition = self.parse_individual_node()?;
-        self.expect_single_char(TokenType::OpenBrace, "to open block while parsing if statement")?;
+        self.expect_single_char(
+            TokenType::OpenBrace,
+            "to open block while parsing if statement",
+        )?;
         let block = self.parse_block()?;
 
         // else clause?
-        let else_clause = if let Some(next) = self.peek_next() && next.ttype == TokenType::Word(String::from("else")) {
+        let else_clause = if let Some(next) = self.peek_next()
+            && next.ttype == TokenType::Word(String::from("else"))
+        {
             self.index += 1;
             Some(Box::new(self.parse_individual_node()?))
         } else {
             None
         };
 
-        Ok(
-            Node {
-                ntype: NodeType::If {
-                    condition: Box::new(condition),
-                    block: Box::new(block),
-                    else_clause,
-                },
-                token: self.current(),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::If {
+                condition: Box::new(condition),
+                block: Box::new(block),
+                else_clause,
+            },
+            token: self.current(),
+        })
     }
 
     // parse a for loop
@@ -180,82 +192,88 @@ impl<'a> Parser {
         self.expect_single_char(TokenType::OpenBrace, "to open block while parsing for loop")?;
         let block = self.parse_block()?;
 
-        Ok(
-            Node {
-                ntype: NodeType::For {
-                    condition: Box::new(condition),
-                    block: Box::new(block),
-                },
-                token: self.current(),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::For {
+                condition: Box::new(condition),
+                block: Box::new(block),
+            },
+            token: self.current(),
+        })
     }
 
     // parse a while loop
     // This logic is again similar to the logic for `for` and `if`
     fn parse_while(&mut self) -> Result<Node<'a>, Error> {
         let condition = self.parse_individual_node()?;
-        self.expect_single_char(TokenType::OpenBrace, "to open block while parsing while loop")?;
+        self.expect_single_char(
+            TokenType::OpenBrace,
+            "to open block while parsing while loop",
+        )?;
         let block = self.parse_block()?;
 
-        Ok(
-            Node {
-                ntype: NodeType::While {
-                    condition: Box::new(condition),
-                    block: Box::new(block),
-                },
-                token: self.current(),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::While {
+                condition: Box::new(condition),
+                block: Box::new(block),
+            },
+            token: self.current(),
+        })
     }
 
     // parse child nodes until a CloseBrace is reached
     fn parse_block(&mut self) -> Result<Node<'a>, Error> {
         let mut chains = Vec::new();
 
-        while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBrace {
+        while let Some(token) = self.peek_next()
+            && token.ttype != TokenType::CloseBrace
+        {
             chains.push(self.parse_individual_node()?);
         }
 
         // consume CloseBrace or EOF?
         match self.peek_next() {
             Some(_) => self.index += 1,
-            None => return Err(Error::new_parsing(None, "unexpected EOF while parsing block")),
+            None => {
+                return Err(Error::new_parsing(
+                    None,
+                    "unexpected EOF while parsing block",
+                ));
+            }
         }
 
-        Ok(
-            Node {
-                ntype: NodeType::CodeBlock {
-                    chains,
-                    signature: Vec::new(),
-                },
-                token: self.current(),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::CodeBlock {
+                chains,
+                signature: Vec::new(),
+            },
+            token: self.current(),
+        })
     }
 
     // parse an array declaration (stuff in [])
     fn parse_array(&mut self) -> Result<Node<'a>, Error> {
         let mut children = Vec::new();
 
-        while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBracket {
+        while let Some(token) = self.peek_next()
+            && token.ttype != TokenType::CloseBracket
+        {
             children.push(self.parse_individual_node()?);
 
             // consume comma if there is one
-            if let Some(token) = self.peek_next() && token.ttype == TokenType::Comma {
+            if let Some(token) = self.peek_next()
+                && token.ttype == TokenType::Comma
+            {
                 self.index += 1;
             }
-        };
+        }
 
         // consume CloseBracket
         self.expect_single_char(TokenType::CloseBracket, "while ending array literal")?;
 
-        Ok(
-            Node {
-                token: self.current(),
-                ntype: NodeType::ArrayLiteral(children),
-            }
-        )
+        Ok(Node {
+            token: self.current(),
+            ntype: NodeType::ArrayLiteral(children),
+        })
     }
 
     // parse let statements inside a `datatype` block
@@ -264,128 +282,160 @@ impl<'a> Parser {
 
         // get name
         let Some(next) = self.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF while parsing datatype"));
+            return Err(Error::new_parsing(
+                None,
+                "unexpected EOF while parsing datatype",
+            ));
         };
         let TokenType::Word(name) = next.ttype else {
-            return Err(Error::new_parsing(Some(next.clone()), format!("expected Word while parsing datatype name;\nfound {}", next.ttype)))
+            return Err(Error::new_parsing(
+                Some(next.clone()),
+                format!(
+                    "expected Word while parsing datatype name;\nfound {}",
+                    next.ttype
+                ),
+            ));
         };
 
         self.expect_single_char(TokenType::OpenBrace, "while parsing datatype definition")?;
 
         // read all let statements
-        while let Some(token) = self.peek_next() && token.ttype != TokenType::CloseBrace {
+        while let Some(token) = self.peek_next()
+            && token.ttype != TokenType::CloseBrace
+        {
             let assignment = self.parse_individual_node()?;
 
-            let NodeType::Assignment { path, value, create } = assignment.ntype else {
-                return Err(Error::new_parsing(self.current(), "only let statements are allowed inside datatype definitions"))
+            let NodeType::Assignment {
+                path,
+                value,
+                create,
+            } = assignment.ntype
+            else {
+                return Err(Error::new_parsing(
+                    self.current(),
+                    "only let statements are allowed inside datatype definitions",
+                ));
             };
 
             if !create {
-                return Err(Error::new_parsing(self.current(), "only let statements are allowed inside datatype definitions. Help: add let"))
+                return Err(Error::new_parsing(
+                    self.current(),
+                    "only let statements are allowed inside datatype definitions. Help: add let",
+                ));
             }
 
             if path.len() != 1 {
-                return Err(Error::new_parsing(self.current(), "only local assignments are allowed inside datatype definitions"));
+                return Err(Error::new_parsing(
+                    self.current(),
+                    "only local assignments are allowed inside datatype definitions",
+                ));
             }
 
             // determine where to put value
             match value.ntype {
-                NodeType::Literal(_) | NodeType::Call { .. } | NodeType::CodeBlock { .. } | NodeType::Chain(_) => {
+                NodeType::Literal(_)
+                | NodeType::Call { .. }
+                | NodeType::CodeBlock { .. }
+                | NodeType::Chain(_) => {
                     attributes.insert(path[0].clone(), *value);
                 }
-                _ => return Err(Error::new_parsing(self.current(), format!("only functions, calls, literals and chains can be assigned inside datatype definitions, not {:?}", value.ntype))),
+                _ => {
+                    return Err(Error::new_parsing(
+                        self.current(),
+                        format!(
+                            "only functions, calls, literals and chains can be assigned inside datatype definitions, not {:?}",
+                            value.ntype
+                        ),
+                    ));
+                }
             }
         }
 
-        self.expect_single_char(TokenType::CloseBrace, "while parsing end of datatype definition")?;
+        self.expect_single_char(
+            TokenType::CloseBrace,
+            "while parsing end of datatype definition",
+        )?;
 
-        Ok(Node { ntype: NodeType::DataType { name, attributes }, token: self.current()})
+        Ok(Node {
+            ntype: NodeType::DataType { name, attributes },
+            token: self.current(),
+        })
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {
         let name = self.expect_word("expected variable name")?;
 
         // check if there's an equals sign
-        self.expect_single_char(
-            TokenType::Assignment,
-            "while parsing let statement",
-        )?;
+        self.expect_single_char(TokenType::Assignment, "while parsing let statement")?;
 
         let value = self.parse_individual_node()?;
 
         // check for semicolon
         if self.current().unwrap().ttype != TokenType::ChainEnd {
-            self.expect_single_char(
-                TokenType::ChainEnd,
-                "while parsing let statement",
-            )?;
+            self.expect_single_char(TokenType::ChainEnd, "while parsing let statement")?;
         }
 
-        Ok(
-            Node {
-                ntype: NodeType::Assignment {
-                    path: Vec::from([name]),
-                    value: Box::new(value),
-                    create: true
-                },
-                token: self.current(),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::Assignment {
+                path: Vec::from([name]),
+                value: Box::new(value),
+                create: true,
+            },
+            token: self.current(),
+        })
     }
 
     fn parse_assignment(&mut self, path: Vec<String>) -> Result<Node<'a>, Error> {
         let value = self.parse_individual_node()?;
-        self.expect_single_char(
-            TokenType::ChainEnd,
-            "while parsing assignment",
-        )?;
-        
-        Ok(
-            Node {
-                ntype: NodeType::Assignment {
-                    path,
-                    value: Box::new(value),
-                    create: false,
-                },
-                token: self.current(),
-            }
-        )
-    }
+        self.expect_single_char(TokenType::ChainEnd, "while parsing assignment")?;
 
+        Ok(Node {
+            ntype: NodeType::Assignment {
+                path,
+                value: Box::new(value),
+                create: false,
+            },
+            token: self.current(),
+        })
+    }
 
     fn parse_call(&mut self, path: Vec<String>) -> Result<Node<'a>, Error> {
         let mut children = Vec::new();
 
         loop {
             // support empty calls
-            if let Some(next) = self.peek_next() && next.ttype == TokenType::CloseParen {
+            if let Some(next) = self.peek_next()
+                && next.ttype == TokenType::CloseParen
+            {
                 self.index += 1;
-                break
+                break;
             }
 
             children.push(self.parse_individual_node()?);
 
             // check next token to determine if the parens ended or its a comma
-            if let Some(next) = self.peek_next() && next.ttype == TokenType::CloseParen {
+            if let Some(next) = self.peek_next()
+                && next.ttype == TokenType::CloseParen
+            {
                 self.index += 1;
                 break;
             }
         }
 
         // if next char is semicolon, consume
-        if let Some(token) = self.peek_next() && token.ttype == TokenType::ChainEnd {
+        if let Some(token) = self.peek_next()
+            && token.ttype == TokenType::ChainEnd
+        {
             self.index += 1;
         }
 
-        Ok(
-            Node {
-                ntype: NodeType::Call {
-                    arguments: children,
-                    path,
-                },
-                token: self.current(),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::Call {
+                arguments: children,
+                path,
+            },
+            token: self.current(),
+        })
     }
 
     /// Responsible for parsing comparisons and operators
@@ -402,27 +452,35 @@ impl<'a> Parser {
         let mut second_expression = self.parse_individual_node()?;
 
         // change child operator if it takes precedence (no way that's spelled right)
-        if let NodeType::Operator(second_operator, second_operator_arm1, second_operator_arm2) = second_expression.clone().ntype
-        && (second_operator.is_boolean_operator() && !token.clone().ttype.is_boolean_operator()) {
+        if let NodeType::Operator(second_operator, second_operator_arm1, second_operator_arm2) =
+            second_expression.clone().ntype
+            && (second_operator.is_boolean_operator() && !token.clone().ttype.is_boolean_operator())
+        {
             // move the previous operator into the first arm, as well as the first arm of the second
             // operator
             let new_first_arm = Node {
                 token: Some(token.clone()),
-                ntype: NodeType::Operator(token.clone().ttype, Box::new(first_arm.clone()), second_operator_arm1),
+                ntype: NodeType::Operator(
+                    token.clone().ttype,
+                    Box::new(first_arm.clone()),
+                    second_operator_arm1,
+                ),
             };
             first_arm = new_first_arm;
-            
+
             // take the token from the second operator and expand it
             token = second_expression.clone().token.unwrap();
             second_expression = *second_operator_arm2;
         }
 
-        Ok(
-            Node {
-                token: Some(token.clone()),
-                ntype: NodeType::Operator(token.ttype, Box::new(first_arm), Box::new(second_expression)),
-            }
-        )
+        Ok(Node {
+            token: Some(token.clone()),
+            ntype: NodeType::Operator(
+                token.ttype,
+                Box::new(first_arm),
+                Box::new(second_expression),
+            ),
+        })
     }
 
     /// Parse a non-keyword
@@ -437,20 +495,26 @@ impl<'a> Parser {
         let mut chain = Vec::new();
         while let Some(token) = self.next() {
             match token.ttype.clone() {
-                TokenType::PathSeparator => {},
+                TokenType::PathSeparator => {}
                 TokenType::Word(w) => path.push(w),
                 TokenType::OpenParen => {
                     chain.push(self.parse_call(path.clone())?);
-                    
+
                     // if the call consumed a semicolon, break
-                    if let Some(current) = self.current() && current.ttype == TokenType::ChainEnd {
+                    if let Some(current) = self.current()
+                        && current.ttype == TokenType::ChainEnd
+                    {
                         break;
                     }
 
                     path.clear();
                 }
                 TokenType::Assignment => return self.parse_assignment(path),
-                TokenType::CloseParen | TokenType::CloseBrace | TokenType::OpenBrace | TokenType::ChainEnd | TokenType::Comma => {
+                TokenType::CloseParen
+                | TokenType::CloseBrace
+                | TokenType::OpenBrace
+                | TokenType::ChainEnd
+                | TokenType::Comma => {
                     if !path.is_empty() {
                         chain.push(Node {
                             ntype: NodeType::Variable(path.clone()),
@@ -464,18 +528,25 @@ impl<'a> Parser {
                 _ => {
                     if token.ttype.is_operator() {
                         if !path.is_empty() {
-                            chain.push(Node { ntype: NodeType::Variable(path.clone()), token: Some(token.clone()) });
+                            chain.push(Node {
+                                ntype: NodeType::Variable(path.clone()),
+                                token: Some(token.clone()),
+                            });
                             path.clear(); //paving the way lol
                         }
 
                         //chain.push(Node { ntype: NodeType::Operator(token.ttype.clone()), token: Some(token) });
                         return self.parse_operator(chain);
                     } else if let Ok(obj) = Object::from_token(token.clone()) {
-                        chain.push(Node { ntype: NodeType::Literal(obj), token: Some(token) });
+                        chain.push(Node {
+                            ntype: NodeType::Literal(obj),
+                            token: Some(token),
+                        });
                     } else {
-                        return Err(
-                            Error::new_parsing(Some(token.clone()), format!("unexpected token type {}", token.ttype))
-                        );
+                        return Err(Error::new_parsing(
+                            Some(token.clone()),
+                            format!("unexpected token type {}", token.ttype),
+                        ));
                     }
                 }
             }
@@ -485,39 +556,38 @@ impl<'a> Parser {
         if chain.len() == 1 {
             Ok(chain[0].clone())
         } else {
-            Ok(
-                Node {
-                    ntype: NodeType::Chain(chain),
-                    token: self.current(),
-                }
-            )
+            Ok(Node {
+                ntype: NodeType::Chain(chain),
+                token: self.current(),
+            })
         }
     }
 
     fn parse_import(&mut self) -> Result<Node<'a>, Error> {
         let Some(token) = self.next() else {
-            return Err(Error::new_parsing(None, "unexpected EOF while parsing import"));
+            return Err(Error::new_parsing(
+                None,
+                "unexpected EOF while parsing import",
+            ));
         };
         let TokenType::String(modname) = token.clone().ttype else {
-            return Err(Error::new_parsing(Some(token.clone()), format!("import names must be Strings, not {}", token.clone().ttype).as_str()));
+            return Err(Error::new_parsing(
+                Some(token.clone()),
+                format!("import names must be Strings, not {}", token.clone().ttype).as_str(),
+            ));
         };
 
         self.expect_single_char(TokenType::ChainEnd, "while parsing import")?;
 
-        Ok(
-            Node {
-                ntype: NodeType::Import(modname),
-                token: Some(token),
-            }
-        )
+        Ok(Node {
+            ntype: NodeType::Import(modname),
+            token: Some(token),
+        })
     }
 
     /// Return the `String` of the next token if it is a `Word`. Otherwise, create an error with
     /// specified message
-    fn expect_word(
-        &mut self,
-        message: &str,
-    ) -> Result<String, Error> {
+    fn expect_word(&mut self, message: &str) -> Result<String, Error> {
         let Some(word) = self.next() else {
             return Err(Error::new_parsing(
                 None,
