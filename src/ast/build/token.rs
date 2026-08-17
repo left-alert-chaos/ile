@@ -318,7 +318,6 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
         match Token::from(b.clone(), line, file.clone()) {
             Ok(token) => tokens.push(token),
             Err(reason) => {
-                println!("Returning error from tokenize()");
                 return Err(reason);
             }
         }
