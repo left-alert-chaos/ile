@@ -4,7 +4,7 @@
 //! values to pass, or things like numbers, booleans or string declarations.
 
 use super::scope::ScopeStack;
-use crate::{Object, Token, TokenType};
+use crate::*;
 
 use std::collections::HashMap;
 
@@ -152,5 +152,23 @@ impl<'a> Node<'a> {
             self.ntype,
             NodeType::Continue | NodeType::Break | NodeType::Return(_)
         )
+    }
+
+    /// Add a `module::Library` to this `Root`'s stack as an `UnimportedModule`.
+    pub fn add_library(&mut self, library: module::Library<'a>) {
+        let NodeType::Root { name, mut stack, statements } = self.ntype.clone() else {
+            panic!("add_library() called on a non-root Node!");
+        };
+        stack.push(Variable::UnimportedModule(library.into()));
+
+        // update scope
+        *self = Self {
+            token: self.token.clone(),
+            ntype: NodeType::Root {
+                name,
+                stack,
+                statements,
+            }
+        };
     }
 }
