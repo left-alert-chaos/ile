@@ -37,7 +37,10 @@ pub fn include(scope: &mut ScopeStack<'_>) {
             name: String::from("eprint"),
             value: wrap_function(&ile_eprint, signature!("string")),
         }
-    )
+    );
+
+    // add the std
+    scope.push(build_ile_std().into())
 }
 
 fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {

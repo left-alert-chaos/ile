@@ -15,7 +15,7 @@ use crate::*;
 ///
 /// Your library will then be imported as "my_library_name".
 ///
-/// It implements `Into<Node<'a>>`.
+/// It implements `Into<Node<'a>>` and `Into<Variable<'a>>`.
 pub struct Library<'a> {
     scope: ScopeStack<'a>,
     name: String,
@@ -57,5 +57,11 @@ impl<'a> Into<Node<'a>> for Library<'a> {
                 statements: Vec::new(),
             }
         }
+    }
+}
+
+impl<'a> Into<Variable<'a>> for Library<'a> {
+    fn into(self) -> Variable<'a> {
+        Variable::Module(self.into())        
     }
 }
