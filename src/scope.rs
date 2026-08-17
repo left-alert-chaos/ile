@@ -347,6 +347,22 @@ impl<'a> ScopeStack<'a> {
     pub fn pop(&mut self) -> Option<Variable<'a>> {
         self.current_stack.pop()
     }
+    
+    /// Search for an `UnimportedModule` on the stack. If it is found, replace it with a `Module`.
+    /// Return whether an `UnimportedModule` was found.
+    /// Doesn't reverse before searching.
+    pub fn import_unimported(&mut self, searched_name: &String) -> bool {
+        for entry in self.current_stack.iter_mut() {
+            if let Variable::UnimportedModule(node) = entry && let Node { ntype: NodeType::Root { name, .. }, .. } = node {
+                if name == searched_name {
+                    *entry = Variable::Module(node.clone());
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
 
     /// Used by `restore_scopes()` and `cache_scopes()`
     fn restore_scope(&mut self, mut scope: Vec<Variable<'a>>) {

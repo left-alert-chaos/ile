@@ -9,8 +9,11 @@ use crate::*;
 ///
 /// The simplest implementation is:
 /// ```rust
-/// let node = Library::new("my_library_name").into();
+/// use ile::*;
+/// let node: Node = module::Library::new("my_library_name").into();
 /// ```
+///
+/// Your library will then be imported as "my_library_name".
 ///
 /// It implements `Into<Node<'a>>`.
 pub struct Library<'a> {
@@ -36,6 +39,11 @@ impl<'a> Library<'a> {
                 value,
             }
         )
+    }
+
+    /// Add another `Library` to this one as a child.
+    pub fn add_child(&mut self, child: Self) {
+        self.scope.push(Variable::Module(child.into()));
     }
 }
 
