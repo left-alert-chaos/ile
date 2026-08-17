@@ -327,6 +327,10 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
     };
 
     for (index, character) in code.chars().enumerate() {
+        if comment && character != '\n' {
+            continue;
+        }
+
         // This match statement is ugly and gross
         match character {
             // single-character tokens are processed by sending complete previous token and then
@@ -404,7 +408,12 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 }
                 line += 1;
             }
-            '#' => comment = true,
+            '#' => {
+                if !string {
+                    println!("Started comment");
+                    comment = true;
+                }
+            }
             _ => {
                 if !comment {
                     buffer.push(character);
