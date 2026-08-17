@@ -409,7 +409,6 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
             }
             '#' => {
                 if !string {
-                    println!("Started comment");
                     comment = true;
                 }
             }
