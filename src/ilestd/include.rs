@@ -37,7 +37,16 @@ pub fn include(scope: &mut ScopeStack<'_>) {
             name: String::from("eprint"),
             value: wrap_function(&ile_eprint, signature!("string")),
         }
-    )
+    );
+    scope.push(
+        Variable::Var {
+            name: String::from("raise"),
+            value: wrap_function(&raise, signature!("string")),
+        }
+    );
+
+    // add the std
+    scope.push(build_ile_std().into());
 }
 
 fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {
@@ -98,4 +107,18 @@ fn input(args: FunctionSignature<'_>) -> FunctionResult<'_> {
             Object::String(buffer)
         )
     )
+}
+
+// returns an error with the specified message
+// the irony of all the argument checking is that it's about to turn around and error anyway
+fn raise(args: FunctionSignature<'_>) -> FunctionResult<'_> {
+    if args.len() != 1 {
+        return Err(Error::new_rust("raise() takes one argument"));
+    }
+
+    let Object::String(s) = args[0].clone() else {
+        return Err(Error::new_rust("raise() takes one string as an argument"));
+    };
+
+    Err(Error::new_runtime(None, s))
 }

@@ -47,7 +47,6 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, Error> {
 /// Not recommended, because it doesn't record the file the code came from.
 pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, String> {
     let tokens = tokenize(code, None)?;
-    eprintln!("{tokens:#?}");
     Ok(Parser::build_root(tokens, String::from("unknown"))?)
 }
 

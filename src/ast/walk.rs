@@ -523,6 +523,11 @@ impl<'a> Node<'a> {
             unreachable!();
         };
 
+        // check if this is importing an existing module
+        if self_stack.import_unimported(&path) {
+            return Ok(None);
+        }
+
         let mut ast = match ast_from_file(path) {
             Ok(ast) => ast,
             // add file to error

@@ -60,7 +60,7 @@ impl fmt::Display for Object<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Function(exec) => write!(f, "Function with executable {exec:?}"),
-            Self::Data(map) => write!(f, "Data with attributes {map:?}"),
+            Self::Data(map) => write!(f, "Data with attributes {map:#?}"),
             Self::Integer(i) => write!(f, "{i}"),
             Self::Float(float) => write!(f, "{float}"),
             Self::Boolean(b) => write!(f, "{b}"),
@@ -241,6 +241,9 @@ pub enum Variable<'a> {
     /// stack to keep what what part to remove.
     StackDivider(Option<ScopeType>),
 
+    /// Represents a Rust-defined module that hasn't been imported yet, but sits in memory.
+    UnimportedModule(Node<'a>),
+
     /// Represents an imported module
     Module(Node<'a>),
 
@@ -268,7 +271,7 @@ impl<'a> Variable<'a> {
             Self::Module(Node {
                 ntype: NodeType::Root { name, .. },
                 ..
-            }) => Some(name.clone()),
+            }) | Self::UnimportedModule( Node { ntype: NodeType::Root { name, .. }, .. } ) => Some(name.clone()),
             _ => None,
         }
     }
