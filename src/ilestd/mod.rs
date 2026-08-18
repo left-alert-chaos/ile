@@ -36,3 +36,24 @@ fn std_info<'a>(_args: FunctionSignature<'a>) -> FunctionResult<'a> {
         )
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raise() {
+        let code = r#"
+        raise("HAHAHAHAHA");
+            "#;
+        let mut ast = ast_from_str(code).unwrap();
+
+        let NodeType::Root { mut stack, .. } = ast.ntype.clone() else {
+            panic!();
+        };
+        include::include(&mut stack);
+
+        let res = ast.walk(&mut stack);
+        assert_eq!(res.err().unwrap().message, String::from("HAHAHAHAHA"))
+    }
+}
