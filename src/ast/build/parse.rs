@@ -413,12 +413,15 @@ impl<'a> Parser {
 
             children.push(self.parse_individual_node()?);
 
+
             // check next token to determine if the parens ended or its a comma
-            if let Some(next) = self.peek_next()
-                && next.ttype == TokenType::CloseParen
-            {
-                self.index += 1;
-                break;
+            if let Some(next) = self.peek_next() {
+                if next.ttype == TokenType::CloseParen || next.ttype == TokenType::Comma {
+                    self.index += 1;
+                }
+                if next.ttype == TokenType::CloseParen {
+                    break;
+                }
             }
         }
 
