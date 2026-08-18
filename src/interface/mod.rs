@@ -24,7 +24,6 @@ macro_rules! signature {
     ( $( $x:expr ),* ) => {
         {
             let mut objects = Vec::new();
-            use std::collections::HashMap;
             $(
                 objects.push(match $x {
                     "int" => Object::Integer(0),
@@ -32,7 +31,7 @@ macro_rules! signature {
                     "bool" => Object::Boolean(false),
                     "string" => Object::String(String::new()),
                     "array" => Object::Array(Vec::new()),
-                    "data" => Object::Data(HashMap::new()),
+                    "data" => Object::Data(std::collections::HashMap::new()),
                     _ => panic!("Only int, float, bool, string, array, and data are allowed in signature macro"),
                 });
             )*

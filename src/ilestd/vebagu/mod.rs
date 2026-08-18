@@ -6,7 +6,7 @@ use crate::*;
 
 /// Build VeBaGu as a `module::Library`.
 pub fn build<'a>() -> module::Library<'a> {
-    let mut vebagu = module::Library::new("vebagu");
+    let vebagu = module::Library::new("vebagu");
 
     vebagu
 }

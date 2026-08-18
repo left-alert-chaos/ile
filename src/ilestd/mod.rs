@@ -3,6 +3,7 @@
 //! in Ile.
 
 pub mod include;
+pub mod in_out;
 pub mod vebagu;
 
 use crate::*;
@@ -14,6 +15,10 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
     let mut ilestd = module::Library::new("std");
 
     ilestd.add_function(&std_info, Vec::new(), "info");
+
+    // add submodules
+    ilestd.add_child(in_out::build());
+    ilestd.add_child(vebagu::build());
 
     ilestd
 }
