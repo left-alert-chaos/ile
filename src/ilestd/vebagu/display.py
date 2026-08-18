@@ -11,10 +11,22 @@ import sys
 
 
 def listen():
+    global widget_text
+    print("listening...")
+    failed_to_read = False
     while True:
-        text = input().strip()
+        # if you can't read, just loop indefinitely. It'll be fiiiine.
+        try:
+            text = input().strip()
+        except:
+            if not failed_to_read:
+                print("Failed to read!")
+            failed_to_read = True
+            continue
+
         if text == "":
             continue
+        print(text)
 
         # get command
         words = text.split()
@@ -27,6 +39,7 @@ def listen():
                 return
             case "H1":
                 tk.Label(root, text=text, font=h1).pack()
+                print("added h1")
             case "H2":
                 tk.Label(root, text=text, font=h2).pack()
             case "H3":
@@ -42,8 +55,9 @@ def mainloop():
         root.mainloop()
     except RuntimeError as e:
         print(f"INFO: error while looping window: {e}")
-    sys.exit(0)
 
+
+widget_text = "placeholder"
 
 root = tk.Tk()
 h1 = Font()
@@ -56,7 +70,8 @@ h4 = Font()
 h4.configure(size=18)
 p = Font()
 
-if __name__ == "__main__":
-    threading.Thread(target=mainloop, name="window").start()
-    listen()
+root.event_generate
+
+threading.Thread(target=mainloop, name="window").start()
+listen()
 
