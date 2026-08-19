@@ -486,6 +486,30 @@ impl<'a> Parser {
         })
     }
 
+    /// Parse indexing an array with square brackets
+    fn parse_index(&mut self, path: &Vec<String>) -> Result<Node<'a>, Error> {
+        let num1 = self.parse_individual_node()?;
+
+        let mut num2 = None;
+        if let Some(next) = self.peek_next() && next.ttype == TokenType::Comma {
+            self.index += 1;
+            num2 = Some(Box::new(self.parse_individual_node()?));
+        }
+
+        self.expect_single_char(TokenType::CloseBracket, "while parsing end of index")?;
+
+        Ok(
+            Node {
+                token: self.current(),
+                ntype: NodeType::Index {
+                    path: path.clone(),
+                    index1: Box::new(num1),
+                    index2: num2,
+                }
+            }
+        )
+    }
+
     /// Parse a non-keyword
     fn parse_misc(&mut self, word: Option<String>) -> Result<Node<'a>, Error> {
         // non-keywords are always paths to something else, so read the path
@@ -511,6 +535,10 @@ impl<'a> Parser {
                     }
 
                     path.clear();
+                }
+                TokenType::OpenBracket => {
+                    chain.push(self.parse_index(&path)?);
+                    path = Vec::new();
                 }
                 TokenType::Assignment => return self.parse_assignment(path),
                 TokenType::CloseParen

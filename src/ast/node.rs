@@ -105,6 +105,13 @@ pub enum NodeType<'a> {
 
     /// Represents an `import` statement
     Import(String),
+
+    /// Represents indexing an array, which is read-only (square brackets)
+    Index {
+        path: Path,
+        index1: Box<Node<'a>>,
+        index2: Option<Box<Node<'a>>>,
+    }
 }
 
 #[derive(Clone, Debug)]

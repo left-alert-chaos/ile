@@ -47,6 +47,58 @@ impl<'a> Node<'a> {
                 stack.push(Variable::Continue);
                 Ok(None)
             }
+            NodeType::Index { .. } => self.walk_index(stack),
+        }
+    }
+
+    fn walk_index(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::Index { mut path, mut index1, index2 } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        // get first index
+        let Some(Object::Integer(maybe_index1)) = index1.walk(stack)? else {
+            return Err(Error::new_runtime(index1.token, "first index didn't return an integer"));
+        };
+        if maybe_index1 < 0 {
+            return Err(Error::new_runtime(self.token.clone(), "indices must not be negative"));
+        }
+        let index1 = maybe_index1 as usize;
+
+        // get second index
+        let index2 = if let Some(mut node) = index2 {
+            if let Some(Object::Integer(i)) = node.walk(stack)? {
+                if i < 0 {
+                    return Err(Error::new_runtime(self.token.clone(), "indices must not be negative"));
+                }
+                i as usize
+            } else {
+                return Err(Error::new_runtime(node.token, "second index didn't return an integer"));
+            }
+        } else {
+            usize::MAX
+        };
+
+        let Object::Array(existing) = stack.path_lookup(&mut path, &self.token.clone().unwrap())? else {
+            return Err(Error::new_runtime(self.token.clone(), format!("object '{}' isn't an array, so it can't be indexed", debug_path(&path))));
+        };
+
+        let mut new = Vec::new();
+
+        for (index, object) in existing.iter().enumerate() {
+            if index < index1 {
+                continue;
+            } else if index > index2 {
+                break;
+            }
+
+            new.push(object.clone());
+        }
+
+        if new.len() == 1 {
+            Ok(Some(new[0].clone()))
+        } else {
+            Ok(Some(Object::Array(new)))
         }
     }
 
