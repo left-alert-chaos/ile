@@ -188,9 +188,9 @@ impl<'a> Object<'a> {
 
     /// Determine if the object is an Array and return a reference to underlying `Vec<Object>` if it
     /// is.
-    pub fn array(&'a self) -> Option<&'a Vec<Object<'a>>> {
+    pub fn array(&'a self) -> Option<Vec<Object<'a>>> {
         if let Self::Array(a) = self {
-            Some(a)
+            Some(a.clone())
         } else {
             None
         }

@@ -95,7 +95,9 @@ impl<'a> Node<'a> {
             new.push(object.clone());
         }
 
-        if new.len() == 1 {
+        if index2 != usize::MAX && new.len() == 0 {
+            Err(Error::new_runtime(self.token.clone(), format!("array '{}' doesn't have the index {index1}", debug_path(&path))))
+        } else if new.len() == 1 {
             Ok(Some(new[0].clone()))
         } else {
             Ok(Some(Object::Array(new)))
@@ -305,6 +307,18 @@ impl<'a> Node<'a> {
                 }
                 Object::Float(f1) => Ok(Some(Object::Float(f1 + arm2_value.float().unwrap()))),
                 Object::String(s1) => Ok(Some(Object::String(s1 + arm2_value.string().unwrap()))),
+                Object::Array(a1) => {
+                    let mut new: Vec<Object<'a>> = Vec::new();
+                    for object in a1 {
+                        new.push(object);
+                    }
+                    if let Object::Array(a2) = arm2_value {
+                        for object in a2 {
+                            new.push(object);
+                        }
+                    }
+                    Ok(Some(Object::Array(new)))
+                }
                 _ => Err(Error::new_runtime(
                     self.token.clone(),
                     format!("can't add {arm1_value:?} to {arm2_value:?}"),
