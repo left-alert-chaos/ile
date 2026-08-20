@@ -342,10 +342,32 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
         match character {
             // single-character tokens are processed by sending complete previous token and then
             // sending them by themselves
-            ';' | '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '+' | '-' | '*' | '/' | ',' => {
+            ';' | '(' | ')' | '[' | ']' | '{' | '}' | '+' | '*' | '/' | ',' => {
                 finish_token(&mut buffer, string, line)?;
                 buffer.push(character);
                 finish_token(&mut buffer, string, line)?;
+            }
+            // minus can be a subtraction or a negative number
+            '-' => {
+                // raise if you can't tell what it does
+                if index + 1 >= code.len() {
+                    return Err(Error {
+                        message: String::from("EOF before meaning of minus sign can be determined"),
+                        location: PipelineLocation::Tokenization,
+                        file: file.unwrap_or(String::from("unknown")),
+                        token: None,
+                    });
+                }
+
+                let next = code.chars().nth(index + 1).unwrap();
+
+                if next.is_ascii_digit() {
+                    buffer.push('-');
+                } else {
+                    finish_token(&mut buffer, string, line)?;
+                    buffer.push('-');
+                    finish_token(&mut buffer, string, line)?;
+                }
             }
             // Dot is similar to other single-character tokens, but has to check if it's being used
             // in a float first
@@ -384,15 +406,15 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 }
             }
             // Similar to the =, the ! is only processed by itself if the next character isn't =.
-            '!' => {
+            '!' | '>' | '<' => {
                 // process as its own token
                 if Some('=') != code.chars().nth(index + 1) {
                     finish_token(&mut buffer, string, line)?;
-                    buffer.push('!');
+                    buffer.push(character);
                     finish_token(&mut buffer, string, line)?;
                 } else {
                     // if it's not its own thing, add to buffer
-                    buffer.push('!');
+                    buffer.push(character);
                 }
             }
             // process string literals
