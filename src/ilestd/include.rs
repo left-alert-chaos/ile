@@ -48,6 +48,10 @@ pub fn include(scope: &mut ScopeStack<'_>) {
         name: String::from("format"),
         value: wrap_function(&ile_format, Vec::new()),
     });
+    scope.push(Variable::Var {
+        name: String::from("not"),
+        value: wrap_function(&not, signature!("bool")),
+    });
 
     // add the std
     scope.push(build_ile_std().into());
@@ -136,4 +140,16 @@ fn ile_format(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     }
 
     Ok(Some(Object::String(result)))
+}
+
+// Takes a boolean as an argument and returns the flipped bool
+fn not(args: FunctionSignature<'_>) -> FunctionResult<'_> {
+    if args.len() != 1 {
+        return Err(Error::new_rust("not() takes one argument"));
+    }
+    let Object::Boolean(value) = args[0] else {
+        return Err(Error::new_rust("not() takes one boolean as its only argument"));
+    };
+
+    Ok(Some(Object::Boolean(!value)))
 }
