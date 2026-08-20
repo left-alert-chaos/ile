@@ -610,7 +610,7 @@ impl<'a> Node<'a> {
 
         // this uses waaaaay too much memory, but it's what I can come up with
         let NodeType::Root {
-            name,
+            mut name,
             mut stack,
             statements,
         } = ast.ntype.clone()
@@ -618,6 +618,13 @@ impl<'a> Node<'a> {
             unreachable!();
         };
         ast.walk(&mut stack)?;
+
+        if name.ends_with(".il") {
+            name.pop();
+            name.pop();
+            name.pop();
+        }
+
         ast = Node {
             token: None,
             ntype: NodeType::Root {

@@ -44,6 +44,10 @@ pub fn include(scope: &mut ScopeStack<'_>) {
             value: wrap_function(&raise, signature!("string")),
         }
     );
+    scope.push(Variable::Var {
+        name: String::from("format"),
+        value: wrap_function(&ile_format, Vec::new()),
+    });
 
     // add the std
     scope.push(build_ile_std().into());
@@ -121,4 +125,15 @@ fn raise(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     };
 
     Err(Error::new_runtime(None, s))
+}
+
+// Takes any number of arguments and returns a string of the formatted args
+fn ile_format(args: FunctionSignature<'_>) -> FunctionResult<'_> {
+    let mut result = String::new();
+
+    for arg in args {
+        result = format!("{result}{arg}");
+    }
+
+    Ok(Some(Object::String(result)))
 }
