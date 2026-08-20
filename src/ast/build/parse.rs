@@ -363,10 +363,16 @@ impl<'a> Parser {
     }
 
     fn parse_let(&mut self) -> Result<Node<'a>, Error> {
-        let name = self.expect_word("expected variable name")?;
+        let mut path = Vec::new();
 
-        // check if there's an equals sign
-        self.expect_single_char(TokenType::Assignment, "while parsing let statement")?;
+        while let Some(token) = self.next() {
+            match token.ttype {
+                TokenType::Word(w) => path.push(w),
+                TokenType::PathSeparator => {},
+                TokenType::Assignment => break,
+                _ => return Err(Error::new_parsing(Some(token), "expected word, path separator, or assignment while parsing let statement")),
+            }
+        }
 
         let value = self.parse_individual_node()?;
 
@@ -377,7 +383,7 @@ impl<'a> Parser {
 
         Ok(Node {
             ntype: NodeType::Assignment {
-                path: Vec::from([name]),
+                path,
                 value: Box::new(value),
                 create: true,
             },
@@ -614,25 +620,6 @@ impl<'a> Parser {
             ntype: NodeType::Import(modname),
             token: Some(token),
         })
-    }
-
-    /// Return the `String` of the next token if it is a `Word`. Otherwise, create an error with
-    /// specified message
-    fn expect_word(&mut self, message: &str) -> Result<String, Error> {
-        let Some(word) = self.next() else {
-            return Err(Error::new_parsing(
-                None,
-                "unexpected EOF (expected word token)",
-            ));
-        };
-        let TokenType::Word(word) = word.ttype.clone() else {
-            return Err(Error::new_parsing(
-                Some(word.clone()),
-                format!("{message} (Word token);\nfound {}", word.ttype),
-            ));
-        };
-
-        Ok(word)
     }
 
     /// Return a `Result<(), Error>` about whether the specified token type is next. Most useful for
