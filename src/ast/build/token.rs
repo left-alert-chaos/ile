@@ -176,8 +176,15 @@ impl<'a> TokenType {
         )
     }
 
-    pub fn is_boolean_operator(&self) -> bool {
-        matches!(self, Self::And | Self::Or)
+    pub fn operator_priority(&self) -> u8 {
+        match self {
+            Self::Multiplication | Self::Division => 1,
+            Self::Addition | Self::Subtraction => 2,
+            Self::GreaterThan | Self::LessThan | Self::GreaterThanOrEqualTo | Self::LessThanOrEqualTo => 3,
+            Self::And | Self::Or => 4,
+            Self::Equality | Self::NotEqualTo => 5,
+            _ => 0
+        }
     }
 
     /// Determine if two tokens have the same TokenType (ignoring inner values)
@@ -207,7 +214,7 @@ impl<'a> TokenType {
     // This took waaaay too long to write because of stupid lifetime errors.
     /// Check if two operator arms are the correct classifications to use this operator
     pub fn arms_are_correct(&self, arm1: &Object<'a>, arm2: &Object<'a>) -> bool {
-        if self.is_boolean_operator() {
+        if self.operator_priority() == 4 {
             return arm1.boolean().is_some() && arm2.boolean().is_some();
         }
 
@@ -218,6 +225,7 @@ impl<'a> TokenType {
                         || (arm1.is_data() && arm2.is_data())
                         || (arm1.float().is_some() && arm2.float().is_some())
                         || (arm1.is_integer() && arm2.is_integer()))
+                        || (arm1.is_string() && arm2.is_string())
             }
             _ => {
                 (arm1.integer().is_some() && arm2.integer().is_some())
