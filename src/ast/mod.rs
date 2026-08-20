@@ -74,19 +74,19 @@ mod tests {
     }
 
     #[test]
-    fn parse_hello_world_wip() {
+    fn parse_hello_world() {
         let hello_world = "println(\"Hello, world!\");";
         test_build(hello_world);
     }
 
     #[test]
-    fn parse_nested_functions_wip() {
+    fn parse_nested_functions() {
         let code = "func(func());";
         test_build(code);
     }
 
     #[test]
-    fn parse_let_wip() {
+    fn parse_let() {
         let code = "let x = 5;";
         test_build(code);
     }

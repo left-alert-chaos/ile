@@ -178,4 +178,30 @@ impl<'a> Node<'a> {
             }
         };
     }
+
+    /// Walk self using your own stack (only for `NodeType::Root`)
+    pub fn walk_as_mod(&mut self) -> Result<(), Error> {
+        let NodeType::Root { name, mut stack, statements } = self.ntype.clone() else {
+            panic!("Node::walk_as_mod() called on a non-root node!");
+        };
+
+        // check for standard library. if it's not found, include it
+        if stack.lookup(&String::from("std")).is_none() {
+            include::include(&mut stack);
+        }
+
+        self.walk(&mut stack)?;
+
+        // reset self
+        *self = Self {
+            token: self.token.clone(),
+            ntype: NodeType::Root {
+                name,
+                stack,
+                statements,
+            }
+        };
+
+        Ok(())
+    }
 }

@@ -16,6 +16,7 @@ use crate::*;
 /// Your library will then be imported as "my_library_name".
 ///
 /// It implements `Into<Node<'a>>` and `Into<Variable<'a>>`.
+#[derive(Debug, Clone)]
 pub struct Library<'a> {
     scope: ScopeStack<'a>,
     name: String,
