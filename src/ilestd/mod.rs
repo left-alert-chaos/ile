@@ -5,6 +5,7 @@
 pub mod include;
 pub mod in_out;
 pub mod vebagu;
+pub mod time;
 
 use crate::*;
 
@@ -19,6 +20,7 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
     // add submodules
     ilestd.add_child(in_out::build());
     ilestd.add_child(vebagu::build());
+    ilestd.add_child(time::build());
 
     ilestd
 }
