@@ -14,7 +14,7 @@ fn run_all_examples() {
         // skip because testing hangs while waiting for input
         if name.ends_with("echo.il") {
             log(format!("skipping {name} because it uses input()"));
-            continue
+            continue;
         }
 
         // attempt to walk it
