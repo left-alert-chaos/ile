@@ -61,21 +61,24 @@ impl Error {
     /// Create a detailed error message including location, type, and reason.
     pub fn format(&self) -> String {
         let line;
+        let col;
         let location_token;
         let file;
         if let Some(token) = self.token.clone() {
             line = format!("{}", token.line);
+            col = format!("{}", token.col);
             location_token = format!("{:?}", token.ttype);
             file = token.file.unwrap_or(String::from("unknown"));
         } else {
             line = String::from("unknown");
+            col = String::from("unknown");
             location_token = String::from("unknown");
             file = String::from("unknown");
         }
 
         format!(
-            "{} error at line {} in file {}:\n{}\nnear token {}",
-            self.location, line, file, self.message, location_token,
+            "{} error at line {}, col {} in file {}:\n{}\nnear token {}",
+            self.location, line, col, file, self.message, location_token,
         )
     }
 }

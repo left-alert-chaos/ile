@@ -17,14 +17,15 @@ use std::fmt;
 pub struct Token {
     pub ttype: TokenType,
     pub line: u64,
+    pub col: u32,
     pub file: Option<String>,
 }
 
 impl Token {
-    pub fn from(value: String, line: u64, file: Option<String>) -> Result<Self, Error> {
+    pub fn from(value: String, line: u64, col: u32, file: Option<String>) -> Result<Self, Error> {
         let ttype = TokenType::from(value)?;
 
-        Ok(Self { ttype, line, file })
+        Ok(Self { ttype, line, col, file })
     }
 }
 
@@ -316,16 +317,17 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
     let mut previous = ' ';
     let mut line = 1;
     let mut comment = false;
+    let mut col = 1;
 
     // Closure to run when all characters of a token have been read
-    let mut finish_token = |b: &mut String, s: bool, line: u64| {
+    let mut finish_token = |b: &mut String, s: bool, line: u64, col: u32| {
         // Skip if no buffer to tokenize
         if b.is_empty() || s {
             return Ok(());
         }
 
         // Attempt to tokenize buffer
-        match Token::from(b.clone(), line, file.clone()) {
+        match Token::from(b.clone(), line, col, file.clone()) {
             Ok(token) => tokens.push(token),
             Err(reason) => {
                 return Err(reason);
@@ -345,9 +347,9 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
             // single-character tokens are processed by sending complete previous token and then
             // sending them by themselves
             ';' | '(' | ')' | '[' | ']' | '{' | '}' | '+' | '*' | '/' | ',' => {
-                finish_token(&mut buffer, string, line)?;
+                finish_token(&mut buffer, string, line, col)?;
                 buffer.push(character);
-                finish_token(&mut buffer, string, line)?;
+                finish_token(&mut buffer, string, line, col)?;
             }
             // minus can be a subtraction or a negative number
             '-' => {
@@ -365,9 +367,9 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 if next.is_ascii_digit() {
                     buffer.push('-');
                 } else {
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                     buffer.push('-');
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                 }
             }
             // Dot is similar to other single-character tokens, but has to check if it's being used
@@ -377,9 +379,9 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                     buffer.push('.');
                 } else {
                     // if it's not a number, create a new token
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                     buffer.push('.');
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                 }
             }
             // Equality only processed as its own token if the previous character wasn't special.
@@ -395,11 +397,11 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                             // the same regardless.
                             // I wrote this at 11 PM, so this might get replaced at some point
                             if next != '=' {
-                                finish_token(&mut buffer, string, line)?;
+                                finish_token(&mut buffer, string, line, col)?;
                                 buffer.push('=');
-                                finish_token(&mut buffer, string, line)?;
+                                finish_token(&mut buffer, string, line, col)?;
                             } else {
-                                finish_token(&mut buffer, string, line)?;
+                                finish_token(&mut buffer, string, line, col)?;
                                 buffer.push('=');
                             }
                         }
@@ -410,9 +412,9 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
             '!' | '>' | '<' => {
                 // process as its own token
                 if Some('=') != code.chars().nth(index + 1) {
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                     buffer.push(character);
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                 } else {
                     // if it's not its own thing, add to buffer
                     buffer.push(character);
@@ -423,19 +425,20 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 string = !string;
                 buffer.push('"');
                 if !string {
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                 }
             }
             ' ' | '\t' if !string => {
-                finish_token(&mut buffer, string, line)?;
+                finish_token(&mut buffer, string, line, col)?;
             }
             '\n' => {
                 comment = false;
                 if !string {
-                    finish_token(&mut buffer, string, line)?;
+                    finish_token(&mut buffer, string, line, col)?;
                 } else {
                     buffer.push('\n');
                 }
+                col = 1;
                 line += 1;
             }
             '#' => {
@@ -451,10 +454,11 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
         }
 
         previous = character;
+        col += 1;
     }
 
     // flush buffer in case there's a trailing token
-    finish_token(&mut buffer, string, line)?;
+    finish_token(&mut buffer, string, line, col)?;
 
     Ok(tokens)
 }
