@@ -574,12 +574,7 @@ impl<'a> Node<'a> {
 
         let walk_res = match value.walk(stack)? {
             Some(res) => res,
-            None => {
-                return Err(Error::new_runtime(
-                    self.token.clone(),
-                    "assigned node returned nothing",
-                ));
-            }
+            None => return Ok(None),
         };
 
         if path.is_empty() {
