@@ -5,3 +5,4 @@ This documentation assumes that you can already program in another language. It'
 
 ## Table of Contents
 1. [Hello, world!](hello_world.md)
+2. [Objects and classifications](objects.md)

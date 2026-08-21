@@ -10,6 +10,8 @@ Writing to the standard output in Ile is fairly simple, and it steals Rust's `pr
 println("Hello, world!");
 ```
 
+Note: Ile uses traditional call syntax--if you've used C, C++, Rust, JS, or any other C-style language, this is very familiar syntax.
+
 Save that to a `hello.il` and run it with `ile hello.il`. Congratulations! You've written some Ile! However, we can take this further. Let's define some variables!
 
 ## Variables
