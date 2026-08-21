@@ -618,6 +618,15 @@ impl<'a> Node<'a> {
             unreachable!();
         };
 
+        println!("Name: {name}");
+
+        // extract path names
+        if name.contains('/') {
+            name = name.split('/').last().unwrap().to_string()
+        } else if name.contains('\\') {
+            name = name.split('\\').last().unwrap().to_string()
+        }
+
         include::include(&mut stack);
         ast.walk(&mut stack)?;
 

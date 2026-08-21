@@ -126,7 +126,7 @@ impl<'a> ScopeStack<'a> {
                 "empty path for lookup",
             ));
         }
-
+        
         // get the top-level object that everything else is an attribute of
         let first = match self.lookup(&path[0]) {
             Some(Variable::Var { value, .. }) => value,
