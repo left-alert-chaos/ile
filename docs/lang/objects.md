@@ -14,7 +14,7 @@ Here's a list of all classifications:
 As you can see, classifications serve to separate different primitives. What's really important to talk about now, though, is Data.
 
 ## Data
-In Ile, a Data object is an object that, instead of wrapping one singluar Rust value, wraps a `HashMap` of attributes. These attributes can be any other object.
+In Ile, a Data object is an object that, instead of wrapping one singular Rust value, wraps a `HashMap` of attributes. These attributes can be any other object.
 
 What this means in English is that Data objects are the only objects that can have attributes, or hold other objects.
 
