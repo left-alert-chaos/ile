@@ -205,4 +205,15 @@ mod tests {
         let ast = test_build(code);
         assert_eq!(test_var("x", ast).integer().unwrap(), 5);
     }
+
+    #[test]
+    fn try_ignores_raise() {
+        let code = r#"
+        try {
+            raise("Error! help!");
+        } catch {}
+            "#;
+        let mut ast = test_build(code);
+        ast.walk_as_mod().unwrap();
+    }
 }

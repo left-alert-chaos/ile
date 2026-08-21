@@ -78,8 +78,23 @@ impl<'a> Parser {
             "import" => self.parse_import(),
             "return" => self.parse_return(),
             "break" | "continue" => self.parse_control_flow(),
+            "try" => self.parse_try(),
             _ => self.parse_misc(Some(word)),
         }
+    }
+
+    fn parse_try(&mut self) -> Result<Node<'a>, Error> {
+        let block_to_try = Box::new(self.parse_individual_node()?);
+        self.expect_single_char(TokenType::Word(String::from("catch")), "while parsing try-catch block")?;
+        let catch = Box::new(self.parse_individual_node()?);
+
+        Ok(Node {
+            token: self.current(),
+            ntype: NodeType::Try {
+                block_to_try,
+                catch,
+            }
+        })
     }
 
     /// Returns a `Break` or `Continue`

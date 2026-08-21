@@ -112,6 +112,12 @@ pub enum NodeType<'a> {
         index1: Box<Node<'a>>,
         index2: Option<Box<Node<'a>>>,
     },
+
+    /// Represents a try-catch block
+    Try {
+        block_to_try: Box<Node<'a>>,
+        catch: Box<Node<'a>>,
+    }
 }
 
 #[derive(Clone, Debug)]

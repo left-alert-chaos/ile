@@ -48,6 +48,18 @@ impl<'a> Node<'a> {
                 Ok(None)
             }
             NodeType::Index { .. } => self.walk_index(stack),
+            NodeType::Try { .. } => self.walk_try(stack),
+        }
+    }
+
+    fn walk_try(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
+        let NodeType::Try { mut block_to_try, mut catch } = self.ntype.clone() else {
+            unreachable!();
+        };
+
+        match block_to_try.walk(stack) {
+            Ok(_) => Ok(None),
+            Err(_) => return catch.walk(stack),
         }
     }
 
