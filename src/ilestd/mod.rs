@@ -22,6 +22,7 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
     ilestd.add_child(in_out::build());
     ilestd.add_child(vebagu::build());
     ilestd.add_child(time::build());
+    ilestd.add_child(cast::build());
 
     ilestd
 }

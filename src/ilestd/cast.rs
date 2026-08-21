@@ -8,7 +8,7 @@ pub fn build<'a>() -> module::Library<'a> {
     let mut cast = module::Library::new("cast");
 
     cast.add_function(&integer, signature!("float"), "integer");
-    cast.add_function(&float, signature!("integer"), "float");
+    cast.add_function(&float, signature!("int"), "float");
 
     cast
 }

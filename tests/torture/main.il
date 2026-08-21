@@ -1,5 +1,6 @@
 import "tests/torture/primes.il";
 import "tests/torture/info.il";
+import "std";
 
 # do some math
 if 5 + 2 * 3 != 11 {
@@ -25,4 +26,9 @@ if -1 >= 0 {
 # check the value of an index
 if info.array[2] != 3 {
 	raise("Bad array indexing");
+}
+
+# cast an int to a float
+if std.cast.float(5) != 5.0 {
+	raise("Bad float casting");
 }
