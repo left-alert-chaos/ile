@@ -214,6 +214,6 @@ mod tests {
         } catch {}
             "#;
         let mut ast = test_build(code);
-        ast.walk_as_mod().unwrap();
+        ast.walk_as_mod(true).unwrap();
     }
 }

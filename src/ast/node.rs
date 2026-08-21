@@ -191,7 +191,7 @@ impl<'a> Node<'a> {
     }
 
     /// Walk self using your own stack (only for `NodeType::Root`)
-    pub fn walk_as_mod(&mut self) -> Result<(), Error> {
+    pub fn walk_as_mod(&mut self, include_std: bool) -> Result<(), Error> {
         let NodeType::Root {
             name,
             mut stack,
@@ -202,7 +202,7 @@ impl<'a> Node<'a> {
         };
 
         // check for standard library. if it's not found, include it
-        if stack.lookup(&String::from("std")).is_none() {
+        if stack.lookup(&String::from("std")).is_none() && include_std {
             include::include(&mut stack);
         }
 

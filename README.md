@@ -31,3 +31,6 @@ Ile is a traditional tree-walking interpreter. When you give it a source file, i
 Once all the tokens have been parsed into a tree (one root node all other nodes are children of), execution can start. This is called "walking" the AST. Walking starts at the root node and does a depth-first search of all nodes and their children. For each node it encounters, it determines how to execute it based on its node type (`ntype`). If a node needs to walk children to get necessary values, like when a `let` statement is set to the result of a function call, its children are walked and their values are stored. If a node needs to make changes to the stack, it does it and finishes, returning a value if it should.
 
 The previously-mentioned stack is a `Vec` of stack entries which can be anything stored in memory--variables, modules, or imports--which is searched in reversed order to determine which variable is referenced when a name is written.
+
+# Documentation
+All documentation for the language is available in the `docs/` directory. [Here's a link!](docs/README.md)

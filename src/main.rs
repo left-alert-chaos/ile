@@ -16,14 +16,7 @@ fn main() -> Result<(), error::Error> {
         eprintln!("ile: no arguments were given");
     } else {
         let mut ast = ile::ast_from_file(args[1].clone())?;
-        let NodeType::Root { mut stack, .. } = ast.ntype.clone() else {
-            unreachable!();
-        };
-
-        // include the standard library
-        ile::ilestd::include::include(&mut stack);
-
-        ast.walk(&mut stack)?;
+        return ast.walk_as_mod(true);
     }
 
     Ok(())

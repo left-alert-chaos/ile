@@ -19,7 +19,7 @@ fn run_all_examples() {
 
         // attempt to walk it
         let mut ast = ile::ast_from_file(name).unwrap();
-        ast.walk_as_mod().unwrap();
+        ast.walk_as_mod(true).unwrap();
         log(format!("Successfully read and ran {name}!\n\n"));
     }
 }

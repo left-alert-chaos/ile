@@ -570,7 +570,8 @@ impl<'a> Parser {
                 | TokenType::CloseBrace
                 | TokenType::OpenBrace
                 | TokenType::ChainEnd
-                | TokenType::Comma => {
+                | TokenType::Comma
+                | TokenType::CloseBracket => {
                     if !path.is_empty() {
                         chain.push(Node {
                             ntype: NodeType::Variable(path.clone()),

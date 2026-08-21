@@ -37,3 +37,9 @@ if std.cast.float(5) != 5.0 {
 if std.cast.integer(5.0) != 5 {
 	raise("Bad int casting");
 }
+
+# get the length of an array
+let array = [1, 2, 3, 4];
+if std.iter.len(array) != 4 {
+	raise("Bad array counting");
+}

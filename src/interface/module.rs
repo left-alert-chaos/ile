@@ -18,7 +18,7 @@ use crate::*;
 /// It implements `Into<Node<'a>>` and `Into<Variable<'a>>`.
 #[derive(Debug, Clone)]
 pub struct Library<'a> {
-    scope: ScopeStack<'a>,
+    pub scope: ScopeStack<'a>,
     name: String,
 }
 

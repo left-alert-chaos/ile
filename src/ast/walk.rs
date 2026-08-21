@@ -53,13 +53,19 @@ impl<'a> Node<'a> {
     }
 
     fn walk_try(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::Try { mut block_to_try, mut catch } = self.ntype.clone() else {
+        let NodeType::Try { block_to_try, catch } = self.ntype.clone() else {
             unreachable!();
         };
 
-        match block_to_try.walk(stack) {
-            Ok(_) => Ok(None),
-            Err(_) => return catch.walk(stack),
+        if !matches!(block_to_try.ntype, NodeType::CodeBlock { .. }) {
+            return Err(Error::new_runtime(self.token.clone(), "try blocks must be code blocks"));
+        } else if !matches!(catch.ntype, NodeType::CodeBlock { .. }) {
+            return Err(Error::new_runtime(self.token.clone(), "catch blocks must be code blocks"));
+        }
+
+        match block_to_try.walk_block(Vec::new(), stack, &Vec::new(), false) {
+            Ok(value) => Ok(value),
+            Err(_) => return catch.walk_block(Vec::new(), stack, &Vec::new(), false),
         }
     }
 
