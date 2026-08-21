@@ -32,3 +32,8 @@ if info.array[2] != 3 {
 if std.cast.float(5) != 5.0 {
 	raise("Bad float casting");
 }
+
+# cast a float to an int
+if std.cast.integer(5.0) != 5 {
+	raise("Bad int casting");
+}
