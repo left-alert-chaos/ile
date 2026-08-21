@@ -65,7 +65,7 @@ impl<'a> Parser {
 
         // if the things before this didn't work, this can only be a word
         let TokenType::Word(word) = token.ttype.clone() else {
-            return Err(Error::new_parsing(Some(token.clone()), "expected word"));
+            return Err(Error::new_parsing(Some(token), "expected word"));
         };
 
         // determine node type from first token
@@ -124,7 +124,8 @@ impl<'a> Parser {
     }
 
     fn parse_return(&mut self) -> Result<Node<'a>, Error> {
-        if let Some(next) = self.next() && next.ttype == TokenType::ChainEnd {
+        if let Some(next) = self.peek_next() && next.ttype == TokenType::ChainEnd {
+            self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
             return Ok(Node {
                 token: Some(next),
                 ntype: NodeType::Return(None),
@@ -547,6 +548,7 @@ impl<'a> Parser {
         // non-keywords are always paths to something else, so read the path
         let mut path = Vec::new();
 
+
         if let Some(word) = word {
             path.push(word);
         }
@@ -618,12 +620,14 @@ impl<'a> Parser {
 
         // first check if it's a lone call or lookup
         if chain.len() == 1 {
-            Ok(chain[0].clone())
+            let result = Ok(chain[0].clone());
+            result
         } else {
-            Ok(Node {
+            let result = Ok(Node {
                 ntype: NodeType::Chain(chain),
                 token: self.current(),
-            })
+            });
+            result
         }
     }
 
