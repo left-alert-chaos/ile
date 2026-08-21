@@ -13,8 +13,14 @@ pub type FunctionResult<'a> = Result<Option<Object<'a>>, Error>;
 
 /// Takes a function and signature. Automatically adds checks to ensure that provided arguments to
 /// the function are the same as in the given signature.
-pub fn wrap_function<'a>(function: &'a dyn Fn(FunctionSignature<'a>) -> FunctionResult<'a>, signature: FunctionSignature<'a>) -> Object<'a> {
-    Object::Function(Executable::Wrapper { signature, func: function })
+pub fn wrap_function<'a>(
+    function: &'a dyn Fn(FunctionSignature<'a>) -> FunctionResult<'a>,
+    signature: FunctionSignature<'a>,
+) -> Object<'a> {
+    Object::Function(Executable::Wrapper {
+        signature,
+        func: function,
+    })
 }
 
 /// Takes a &str and converts it into a FunctionSignature<'_>

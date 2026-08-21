@@ -27,19 +27,22 @@ impl<'a> Library<'a> {
     pub fn new(name: impl ToString) -> Self {
         Self {
             scope: ScopeStack::new(),
-            name: name.to_string()
+            name: name.to_string(),
         }
     }
 
     /// Add a function to a `Library`.
-    pub fn add_function(&mut self, function: &'a dyn Fn(FunctionSignature<'a>) -> FunctionResult<'a>, signature: FunctionSignature<'a>, name: impl ToString) {
+    pub fn add_function(
+        &mut self,
+        function: &'a dyn Fn(FunctionSignature<'a>) -> FunctionResult<'a>,
+        signature: FunctionSignature<'a>,
+        name: impl ToString,
+    ) {
         let value = wrap_function(function, signature);
-        self.scope.push(
-            Variable::Var {
-                name: name.to_string(),
-                value,
-            }
-        )
+        self.scope.push(Variable::Var {
+            name: name.to_string(),
+            value,
+        })
     }
 
     /// Add another `Library` to this one as a child.
@@ -56,13 +59,13 @@ impl<'a> Into<Node<'a>> for Library<'a> {
                 name: self.name,
                 stack: self.scope,
                 statements: Vec::new(),
-            }
+            },
         }
     }
 }
 
 impl<'a> Into<Variable<'a>> for Library<'a> {
     fn into(self) -> Variable<'a> {
-        Variable::UnimportedModule(self.into())        
+        Variable::UnimportedModule(self.into())
     }
 }

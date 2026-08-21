@@ -126,7 +126,7 @@ impl<'a> ScopeStack<'a> {
                 "empty path for lookup",
             ));
         }
-        
+
         // get the top-level object that everything else is an attribute of
         let first = match self.lookup(&path[0]) {
             Some(Variable::Var { value, .. }) => value,
@@ -347,13 +347,18 @@ impl<'a> ScopeStack<'a> {
     pub fn pop(&mut self) -> Option<Variable<'a>> {
         self.current_stack.pop()
     }
-    
+
     /// Search for an `UnimportedModule` on the stack. If it is found, replace it with a `Module`.
     /// Return whether an `UnimportedModule` was found.
     /// Doesn't reverse before searching.
     pub fn import_unimported(&mut self, searched_name: &String) -> bool {
         for entry in self.current_stack.iter_mut() {
-            if let Variable::UnimportedModule(node) = entry && let Node { ntype: NodeType::Root { name, .. }, .. } = node {
+            if let Variable::UnimportedModule(node) = entry
+                && let Node {
+                    ntype: NodeType::Root { name, .. },
+                    ..
+                } = node
+            {
                 if name == searched_name {
                     *entry = Variable::Module(node.clone());
                     return true;

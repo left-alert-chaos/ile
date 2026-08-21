@@ -22,10 +22,7 @@ pub use data::DataType;
 pub mod builtins;
 pub use builtins::*;
 
-use std::{
-    collections::HashMap,
-    fmt,
-};
+use std::{collections::HashMap, fmt};
 
 use crate::*;
 
@@ -271,7 +268,11 @@ impl<'a> Variable<'a> {
             Self::Module(Node {
                 ntype: NodeType::Root { name, .. },
                 ..
-            }) | Self::UnimportedModule( Node { ntype: NodeType::Root { name, .. }, .. } ) => Some(name.clone()),
+            })
+            | Self::UnimportedModule(Node {
+                ntype: NodeType::Root { name, .. },
+                ..
+            }) => Some(name.clone()),
             _ => None,
         }
     }

@@ -111,7 +111,7 @@ pub enum NodeType<'a> {
         path: Path,
         index1: Box<Node<'a>>,
         index2: Option<Box<Node<'a>>>,
-    }
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -163,7 +163,12 @@ impl<'a> Node<'a> {
 
     /// Add a `module::Library` to this `Root`'s stack as an `UnimportedModule`.
     pub fn add_library(&mut self, library: module::Library<'a>) {
-        let NodeType::Root { name, mut stack, statements } = self.ntype.clone() else {
+        let NodeType::Root {
+            name,
+            mut stack,
+            statements,
+        } = self.ntype.clone()
+        else {
             panic!("add_library() called on a non-root Node!");
         };
         stack.push(Variable::UnimportedModule(library.into()));
@@ -175,13 +180,18 @@ impl<'a> Node<'a> {
                 name,
                 stack,
                 statements,
-            }
+            },
         };
     }
 
     /// Walk self using your own stack (only for `NodeType::Root`)
     pub fn walk_as_mod(&mut self) -> Result<(), Error> {
-        let NodeType::Root { name, mut stack, statements } = self.ntype.clone() else {
+        let NodeType::Root {
+            name,
+            mut stack,
+            statements,
+        } = self.ntype.clone()
+        else {
             panic!("Node::walk_as_mod() called on a non-root node!");
         };
 
@@ -199,7 +209,7 @@ impl<'a> Node<'a> {
                 name,
                 stack,
                 statements,
-            }
+            },
         };
 
         Ok(())

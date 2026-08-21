@@ -368,9 +368,14 @@ impl<'a> Parser {
         while let Some(token) = self.next() {
             match token.ttype {
                 TokenType::Word(w) => path.push(w),
-                TokenType::PathSeparator => {},
+                TokenType::PathSeparator => {}
                 TokenType::Assignment => break,
-                _ => return Err(Error::new_parsing(Some(token), "expected word, path separator, or assignment while parsing let statement")),
+                _ => {
+                    return Err(Error::new_parsing(
+                        Some(token),
+                        "expected word, path separator, or assignment while parsing let statement",
+                    ));
+                }
             }
         }
 
@@ -418,7 +423,6 @@ impl<'a> Parser {
             }
 
             children.push(self.parse_individual_node()?);
-
 
             // check next token to determine if the parens ended or its a comma
             if let Some(next) = self.peek_next() {
@@ -497,23 +501,23 @@ impl<'a> Parser {
         let num1 = self.parse_individual_node()?;
 
         let mut num2 = None;
-        if let Some(next) = self.peek_next() && next.ttype == TokenType::Comma {
+        if let Some(next) = self.peek_next()
+            && next.ttype == TokenType::Comma
+        {
             self.index += 1;
             num2 = Some(Box::new(self.parse_individual_node()?));
         }
 
         self.expect_single_char(TokenType::CloseBracket, "while parsing end of index")?;
 
-        Ok(
-            Node {
-                token: self.current(),
-                ntype: NodeType::Index {
-                    path: path.clone(),
-                    index1: Box::new(num1),
-                    index2: num2,
-                }
-            }
-        )
+        Ok(Node {
+            token: self.current(),
+            ntype: NodeType::Index {
+                path: path.clone(),
+                index1: Box::new(num1),
+                index2: num2,
+            },
+        })
     }
 
     /// Parse a non-keyword

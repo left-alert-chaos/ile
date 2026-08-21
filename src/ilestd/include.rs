@@ -8,42 +8,30 @@ use std::io::{self, Write};
 
 /// Push all objects that are on the scope automatically onto the scope.
 pub fn include(scope: &mut ScopeStack<'_>) {
-    scope.push(
-        Variable::Var {
-            name: String::from("println"),
-            value: wrap_function(&ile_println, signature!("string")),
-        }
-    );
-    scope.push(
-        Variable::Var {
-            name: String::from("input"),
-            value: wrap_function(&input, signature!("string")),
-        }
-    );
-    scope.push(
-        Variable::Var {
-            name: String::from("eprintln"),
-            value: wrap_function(&ile_eprintln, signature!("string")),
-        }
-    );
-    scope.push(
-        Variable::Var {
-            name: String::from("print"),
-            value: wrap_function(&ile_print, signature!("string")),
-        }
-    );
-    scope.push(
-        Variable::Var {
-            name: String::from("eprint"),
-            value: wrap_function(&ile_eprint, signature!("string")),
-        }
-    );
-    scope.push(
-        Variable::Var {
-            name: String::from("raise"),
-            value: wrap_function(&raise, signature!("string")),
-        }
-    );
+    scope.push(Variable::Var {
+        name: String::from("println"),
+        value: wrap_function(&ile_println, signature!("string")),
+    });
+    scope.push(Variable::Var {
+        name: String::from("input"),
+        value: wrap_function(&input, signature!("string")),
+    });
+    scope.push(Variable::Var {
+        name: String::from("eprintln"),
+        value: wrap_function(&ile_eprintln, signature!("string")),
+    });
+    scope.push(Variable::Var {
+        name: String::from("print"),
+        value: wrap_function(&ile_print, signature!("string")),
+    });
+    scope.push(Variable::Var {
+        name: String::from("eprint"),
+        value: wrap_function(&ile_eprint, signature!("string")),
+    });
+    scope.push(Variable::Var {
+        name: String::from("raise"),
+        value: wrap_function(&raise, signature!("string")),
+    });
     scope.push(Variable::Var {
         name: String::from("format"),
         value: wrap_function(&ile_format, Vec::new()),
@@ -63,7 +51,7 @@ fn ile_println(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     }
 
     println!("{}", args[0]);
-    
+
     Ok(None)
 }
 
@@ -73,7 +61,7 @@ fn ile_eprintln(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     }
 
     println!("{}", args[0]);
-    
+
     Ok(None)
 }
 
@@ -91,7 +79,7 @@ fn ile_eprint(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     if args.len() != 1 {
         return Err(Error::new_rust("eprint() takes one argument"));
     }
-    
+
     eprint!("{}", args[0]);
 
     Ok(None)
@@ -110,11 +98,7 @@ fn input(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     let _ = io::stdin().read_line(&mut buffer);
     buffer = buffer.trim().to_string();
 
-    Ok(
-        Some(
-            Object::String(buffer)
-        )
-    )
+    Ok(Some(Object::String(buffer)))
 }
 
 // returns an error with the specified message
@@ -148,7 +132,9 @@ fn not(args: FunctionSignature<'_>) -> FunctionResult<'_> {
         return Err(Error::new_rust("not() takes one argument"));
     }
     let Object::Boolean(value) = args[0] else {
-        return Err(Error::new_rust("not() takes one boolean as its only argument"));
+        return Err(Error::new_rust(
+            "not() takes one boolean as its only argument",
+        ));
     };
 
     Ok(Some(Object::Boolean(!value)))

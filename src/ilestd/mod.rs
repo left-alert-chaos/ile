@@ -2,11 +2,11 @@
 //! This module holds the source code of Ile's standard library. Some of it is in Rust, and some is
 //! in Ile.
 
-pub mod include;
-pub mod in_out;
-pub mod vebagu;
-pub mod time;
 pub mod cast;
+pub mod in_out;
+pub mod include;
+pub mod time;
+pub mod vebagu;
 
 use crate::*;
 
@@ -30,15 +30,12 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
 /// Return some info about the standard library.
 /// Doesn't check arguments and uses none.
 fn std_info<'a>(_args: FunctionSignature<'a>) -> FunctionResult<'a> {
-    let attrs = HashMap::from([
-        ("version".to_string(), Object::String("0.1.0 dev".to_string())),
-    ]);
+    let attrs = HashMap::from([(
+        "version".to_string(),
+        Object::String("0.1.0 dev".to_string()),
+    )]);
 
-    Ok(
-        Some(
-            Object::Data(attrs)
-        )
-    )
+    Ok(Some(Object::Data(attrs)))
 }
 
 #[cfg(test)]

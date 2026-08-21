@@ -180,10 +180,13 @@ impl<'a> TokenType {
         match self {
             Self::Multiplication | Self::Division => 1,
             Self::Addition | Self::Subtraction => 2,
-            Self::GreaterThan | Self::LessThan | Self::GreaterThanOrEqualTo | Self::LessThanOrEqualTo => 3,
+            Self::GreaterThan
+            | Self::LessThan
+            | Self::GreaterThanOrEqualTo
+            | Self::LessThanOrEqualTo => 3,
             Self::And | Self::Or => 4,
             Self::Equality | Self::NotEqualTo => 5,
-            _ => 0
+            _ => 0,
         }
     }
 
@@ -225,7 +228,7 @@ impl<'a> TokenType {
                         || (arm1.is_data() && arm2.is_data())
                         || (arm1.float().is_some() && arm2.float().is_some())
                         || (arm1.is_integer() && arm2.is_integer()))
-                        || (arm1.is_string() && arm2.is_string())
+                    || (arm1.is_string() && arm2.is_string())
             }
             _ => {
                 (arm1.integer().is_some() && arm2.integer().is_some())
@@ -510,7 +513,11 @@ mod tests {
 
     #[test]
     fn comment() {
-        let tokens = tokenize("#this line is commented out\n15 #the rest of this line is also commented out", None).unwrap();
+        let tokens = tokenize(
+            "#this line is commented out\n15 #the rest of this line is also commented out",
+            None,
+        )
+        .unwrap();
         assert_eq!(tokens.len(), 1);
     }
 }

@@ -29,11 +29,7 @@ fn read<'a>(s: FunctionSignature<'a>) -> FunctionResult<'a> {
         Err(_) => return Err(Error::new_rust(format!("couldn't read file '{fname}'"))),
     };
 
-    Ok(
-        Some(
-            Object::String(contents)
-        )
-    )
+    Ok(Some(Object::String(contents)))
 }
 
 /// Open a file and write the given string to it.

@@ -3,11 +3,11 @@
 //! to a Python script that draws it in a Tkinter window.
 
 use std::{
-    os::fd::*,
-    io::{Write, PipeWriter, pipe},
-    process::Command,
-    mem::forget,
     fs,
+    io::{PipeWriter, Write, pipe},
+    mem::forget,
+    os::fd::*,
+    process::Command,
 };
 
 const SCRIPT: &str = include_str!("display.py");
@@ -33,7 +33,9 @@ fn new(s: FunctionSignature<'_>) -> FunctionResult<'_> {
 
     // add a temporary file that holds the script
     if fs::write("display.py", SCRIPT).is_err() {
-        return Err(Error::new_rust("vebagu.new() failed to create temporary script"));
+        return Err(Error::new_rust(
+            "vebagu.new() failed to create temporary script",
+        ));
     }
 
     // run python3
@@ -41,14 +43,20 @@ fn new(s: FunctionSignature<'_>) -> FunctionResult<'_> {
     script_process.arg("display.py");
     let (input_reader, input_writer) = match pipe() {
         Ok(p) => p,
-        Err(_) => return Err(Error::new_rust("vebagu.new() failed to create an input pipe")),
+        Err(_) => {
+            return Err(Error::new_rust(
+                "vebagu.new() failed to create an input pipe",
+            ));
+        }
     };
     script_process.stdin(input_reader);
     //input_writer.write_all("h1 hello\n".as_bytes());
 
     // attempt to spawn the process
     if script_process.spawn().is_err() {
-        return Err(Error::new_rust("vebagu.new() failed to spawn the python subprocess"));
+        return Err(Error::new_rust(
+            "vebagu.new() failed to spawn the python subprocess",
+        ));
     }
 
     // safely dispose of the writer to not close the pipe
@@ -64,10 +72,14 @@ fn raw_send(s: FunctionSignature<'_>) -> FunctionResult<'_> {
         return Err(Error::new_rust("vebagu.raw_send() takes two arguments"));
     }
     let Object::Integer(num) = s[0] else {
-        return Err(Error::new_rust("vebagu.raw_send() takes an integer and a string as arguments; the integer is missing"));
+        return Err(Error::new_rust(
+            "vebagu.raw_send() takes an integer and a string as arguments; the integer is missing",
+        ));
     };
     let Object::String(mut text) = s[1].clone() else {
-        return Err(Error::new_rust("vebagu.raw_send() takes an integer and a string as arguments; the string is missing"));
+        return Err(Error::new_rust(
+            "vebagu.raw_send() takes an integer and a string as arguments; the string is missing",
+        ));
     };
 
     text.push('\n');
@@ -82,7 +94,6 @@ fn raw_send(s: FunctionSignature<'_>) -> FunctionResult<'_> {
         forget(writer);
         Ok(None)
     }
-
 }
 
 /// Take a raw fd number and close the pipe
@@ -91,14 +102,16 @@ fn quit(s: FunctionSignature<'_>) -> FunctionResult<'_> {
         return Err(Error::new_rust("vebagu.quit() takes one argument"));
     }
     let Object::Integer(num) = s[0] else {
-        return Err(Error::new_rust("vebagu.quit() takes an integer as its only argument"));
+        return Err(Error::new_rust(
+            "vebagu.quit() takes an integer as its only argument",
+        ));
     };
 
     let raw_fd = num as RawFd;
     let mut writer = unsafe { PipeWriter::from_raw_fd(raw_fd) };
-    
+
     if writer.write_all("quit".as_bytes()).is_err() {
-        return Err(Error::new_rust("writer.write_all() failed"))
+        return Err(Error::new_rust("writer.write_all() failed"));
     }
 
     // remove temp script

@@ -52,16 +52,27 @@ impl<'a> Node<'a> {
     }
 
     fn walk_index(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::Index { mut path, mut index1, index2 } = self.ntype.clone() else {
+        let NodeType::Index {
+            mut path,
+            mut index1,
+            index2,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
         // get first index
         let Some(Object::Integer(maybe_index1)) = index1.walk(stack)? else {
-            return Err(Error::new_runtime(index1.token, "first index didn't return an integer"));
+            return Err(Error::new_runtime(
+                index1.token,
+                "first index didn't return an integer",
+            ));
         };
         if maybe_index1 < 0 {
-            return Err(Error::new_runtime(self.token.clone(), "indices must not be negative"));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                "indices must not be negative",
+            ));
         }
         let index1 = maybe_index1 as usize;
 
@@ -69,18 +80,31 @@ impl<'a> Node<'a> {
         let index2 = if let Some(mut node) = index2 {
             if let Some(Object::Integer(i)) = node.walk(stack)? {
                 if i < 0 {
-                    return Err(Error::new_runtime(self.token.clone(), "indices must not be negative"));
+                    return Err(Error::new_runtime(
+                        self.token.clone(),
+                        "indices must not be negative",
+                    ));
                 }
                 i as usize
             } else {
-                return Err(Error::new_runtime(node.token, "second index didn't return an integer"));
+                return Err(Error::new_runtime(
+                    node.token,
+                    "second index didn't return an integer",
+                ));
             }
         } else {
             index1
         };
 
-        let Object::Array(existing) = stack.path_lookup(&mut path, &self.token.clone().unwrap())? else {
-            return Err(Error::new_runtime(self.token.clone(), format!("object '{}' isn't an array, so it can't be indexed", debug_path(&path))));
+        let Object::Array(existing) = stack.path_lookup(&mut path, &self.token.clone().unwrap())?
+        else {
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                format!(
+                    "object '{}' isn't an array, so it can't be indexed",
+                    debug_path(&path)
+                ),
+            ));
         };
 
         let mut new = Vec::new();
@@ -96,7 +120,13 @@ impl<'a> Node<'a> {
         }
 
         if index2 != usize::MAX && new.len() == 0 {
-            Err(Error::new_runtime(self.token.clone(), format!("array '{}' doesn't have the index {index1}", debug_path(&path))))
+            Err(Error::new_runtime(
+                self.token.clone(),
+                format!(
+                    "array '{}' doesn't have the index {index1}",
+                    debug_path(&path)
+                ),
+            ))
         } else if new.len() == 1 {
             Ok(Some(new[0].clone()))
         } else {
@@ -479,21 +509,14 @@ impl<'a> Node<'a> {
                     match executable {
                         // re-write the call logic
                         Executable::CodeBlock(node) => {
-                            carried_value = node.walk_block(
-                                arg_objects,
-                                stack,
-                                &Vec::new(),
-                                true,
-                            )?;
-
+                            carried_value =
+                                node.walk_block(arg_objects, stack, &Vec::new(), true)?;
                         }
-                        Executable::Wrapper { func, .. } => {
-                            match func(arg_objects) {
-                                Ok(value) => carried_value = value,
-                                Err(mut err) => {
-                                    err.token = self.token.clone();
-                                    return Err(err);
-                                }
+                        Executable::Wrapper { func, .. } => match func(arg_objects) {
+                            Ok(value) => carried_value = value,
+                            Err(mut err) => {
+                                err.token = self.token.clone();
+                                return Err(err);
                             }
                         },
                     }
@@ -691,13 +714,11 @@ impl<'a> Node<'a> {
 
         match executable {
             Executable::CodeBlock(block) => block.walk_block(arg_objects, stack, &path, true),
-            Executable::Wrapper { func, .. } => {
-                match func(arg_objects) {
-                    Ok(value) => Ok(value),
-                    Err(mut err) => {
-                        err.token = self.token.clone();
-                        Err(err)
-                    }
+            Executable::Wrapper { func, .. } => match func(arg_objects) {
+                Ok(value) => Ok(value),
+                Err(mut err) => {
+                    err.token = self.token.clone();
+                    Err(err)
                 }
             },
         }
