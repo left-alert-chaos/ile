@@ -617,6 +617,8 @@ impl<'a> Node<'a> {
         else {
             unreachable!();
         };
+
+        include::include(&mut stack);
         ast.walk(&mut stack)?;
 
         if name.ends_with(".il") {
