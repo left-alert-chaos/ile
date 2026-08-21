@@ -15,7 +15,7 @@ Note: Ile uses traditional call syntax--if you've used C, C++, Rust, JS, or any 
 Save that to a `hello.il` and run it with `ile hello.il`. Congratulations! You've written some Ile! However, we can take this further. Let's define some variables!
 
 ## Variables
-Variables in Ile are defined with the `let` keyword. All variables are mutable. Once you have initialized a variable with `let`, you can re-assign to it with and equals sign. Example:
+Variables in Ile are defined with the `let` keyword. All variables are mutable. Once you have initialized a variable with `let`, you can re-assign to it with an equals sign. Example:
 
 ```
 let x = 5;
