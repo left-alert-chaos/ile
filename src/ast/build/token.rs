@@ -178,12 +178,12 @@ impl<'a> TokenType {
 
     pub fn operator_priority(&self) -> u8 {
         match self {
-            Self::Multiplication | Self::Division => 1,
-            Self::Addition | Self::Subtraction => 2,
             Self::GreaterThan
             | Self::LessThan
             | Self::GreaterThanOrEqualTo
-            | Self::LessThanOrEqualTo => 3,
+            | Self::LessThanOrEqualTo => 1,
+            Self::Multiplication | Self::Division => 2,
+            Self::Addition | Self::Subtraction => 3,
             Self::And | Self::Or => 4,
             Self::Equality | Self::NotEqualTo => 5,
             _ => 0,

@@ -30,7 +30,7 @@ pub enum NodeType<'a> {
     },
 
     /// Represents a `return` statement
-    Return(Box<Node<'a>>),
+    Return(Option<Box<Node<'a>>>),
 
     /// Represents a `break` statement
     Break,

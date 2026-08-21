@@ -124,11 +124,18 @@ impl<'a> Parser {
     }
 
     fn parse_return(&mut self) -> Result<Node<'a>, Error> {
+        if let Some(next) = self.next() && next.ttype == TokenType::ChainEnd {
+            return Ok(Node {
+                token: Some(next),
+                ntype: NodeType::Return(None),
+            });
+        }
+
         let value = self.parse_individual_node()?;
         self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
         Ok(Node {
             token: self.current(),
-            ntype: NodeType::Return(Box::new(value)),
+            ntype: NodeType::Return(Some(Box::new(value))),
         })
     }
 

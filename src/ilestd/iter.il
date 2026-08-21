@@ -7,9 +7,20 @@ datatype Iterator {
 	let next = (self) {
 		let index = self.index;
 		self.index = self.index + 1;
-		#return self.array[self.index];
+
+		if index >= len(self.array) - 1 {
+			return;
+		}
+
+		return self.array[self.index];
 	};
 }
+
+let new_iterator = (array) {
+	let iter = Iterator();
+	iter.array = array;
+	return iter;
+};
 
 let len = (array) {
 	let index = 0;

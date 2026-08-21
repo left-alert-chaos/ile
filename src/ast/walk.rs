@@ -23,8 +23,8 @@ impl<'a> Node<'a> {
                 Box::new(self.clone()),
             )))),
             NodeType::Call { .. } => self.walk_call(stack),
-            NodeType::Return(mut value) => {
-                let value = value.walk(stack)?;
+            NodeType::Return(value) => {
+                let value = if let Some(mut node) = value { node.walk(stack)? } else { None };
                 stack.push(Variable::Return(value));
                 Ok(None)
             }
