@@ -76,7 +76,7 @@ impl<'a> Node<'a> {
                 return Err(Error::new_runtime(node.token, "second index didn't return an integer"));
             }
         } else {
-            usize::MAX
+            index1
         };
 
         let Object::Array(existing) = stack.path_lookup(&mut path, &self.token.clone().unwrap())? else {
@@ -617,8 +617,6 @@ impl<'a> Node<'a> {
         else {
             unreachable!();
         };
-
-        println!("Name: {name}");
 
         // extract path names
         if name.contains('/') {

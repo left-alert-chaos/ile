@@ -1,4 +1,5 @@
 import "tests/torture/primes.il";
+import "tests/torture/info.il";
 
 # do some math
 if 5 + 2 * 3 != 11 {
@@ -21,3 +22,7 @@ if -1 >= 0 {
 	raise("Negative one is greater than or equal to zero");
 }
 
+# check the value of an index
+if info.array[2] != 3 {
+	raise("Bad array indexing");
+}
