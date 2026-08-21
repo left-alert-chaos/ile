@@ -602,19 +602,7 @@ impl<'a> Node<'a> {
             return Ok(None);
         }
 
-        let mut ast = match ast_from_file(path) {
-            Ok(ast) => ast,
-            // add file to error
-            Err(mut reason) => {
-                reason.file = self
-                    .token
-                    .clone()
-                    .unwrap()
-                    .file
-                    .unwrap_or(String::from("unknown"));
-                return Err(reason);
-            }
-        };
+        let mut ast = ast_from_file(path)?;
 
         // this uses waaaaay too much memory, but it's what I can come up with
         let NodeType::Root {

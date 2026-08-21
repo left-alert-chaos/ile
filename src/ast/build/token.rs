@@ -22,7 +22,7 @@ pub struct Token {
 
 impl Token {
     pub fn from(value: String, line: u64, file: Option<String>) -> Result<Self, Error> {
-        let ttype = TokenType::from(value, file.clone().unwrap_or(String::from("unknown")))?;
+        let ttype = TokenType::from(value)?;
 
         Ok(Self { ttype, line, file })
     }
@@ -235,7 +235,7 @@ impl<'a> TokenType {
         }
     }
 
-    fn from(mut value: String, file: String) -> Result<Self, Error> {
+    fn from(mut value: String) -> Result<Self, Error> {
         let len = value.len();
 
         // Determine if it's a single-character token
@@ -283,7 +283,6 @@ impl<'a> TokenType {
                         "invalid string literal due to odd number of quotation marks",
                     ),
                     location: PipelineLocation::Tokenization,
-                    file,
                     token: None,
                 });
             }
@@ -354,7 +353,6 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                     return Err(Error {
                         message: String::from("EOF before meaning of minus sign can be determined"),
                         location: PipelineLocation::Tokenization,
-                        file: file.unwrap_or(String::from("unknown")),
                         token: None,
                     });
                 }
