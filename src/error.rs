@@ -74,17 +74,20 @@ impl Error {
     pub fn format(&self) -> String {
         let line;
         let location_token;
+        let file;
         if let Some(token) = self.token.clone() {
             line = format!("{}", token.line);
             location_token = format!("{:?}", token.ttype);
+            file = token.file.unwrap_or(String::from("unknown"));
         } else {
             line = String::from("unknown");
             location_token = String::from("unknown");
+            file = String::from("unknown");
         }
 
         format!(
             "{} error at line {} in file {}:\n{}\nnear token {}",
-            self.location, line, self.file, self.message, location_token,
+            self.location, line, file, self.message, location_token,
         )
     }
 }

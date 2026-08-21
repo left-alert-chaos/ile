@@ -487,7 +487,15 @@ impl<'a> Node<'a> {
                             )?;
 
                         }
-                        Executable::Wrapper { func, .. } => carried_value = func(arg_objects)?,
+                        Executable::Wrapper { func, .. } => {
+                            match func(arg_objects) {
+                                Ok(value) => carried_value = value,
+                                Err(mut err) => {
+                                    err.token = self.token.clone();
+                                    return Err(err);
+                                }
+                            }
+                        },
                     }
 
                     // don't error if it's the last segment and it wasn't trying to return
@@ -695,7 +703,15 @@ impl<'a> Node<'a> {
 
         match executable {
             Executable::CodeBlock(block) => block.walk_block(arg_objects, stack, &path, true),
-            Executable::Wrapper { func, .. } => func(arg_objects),
+            Executable::Wrapper { func, .. } => {
+                match func(arg_objects) {
+                    Ok(value) => Ok(value),
+                    Err(mut err) => {
+                        err.token = self.token.clone();
+                        Err(err)
+                    }
+                }
+            },
         }
     }
 
