@@ -1,5 +1,33 @@
 # ile
+<img src="ile.png">
 
-[A cartoony image of an island with the text, "Ile: Interpreted Language for Extensions"](ile.png)
+Ile is the Interpreted Language for Extensions. It's an embedded scripting language with tight binding to Rust.
 
-Ile is the Interpreted Language for Extensions. It's an embeddable scripting language with tight binding to Rust.
+Here's a Hello World snippet:
+
+```
+println("Hello, world!");
+```
+
+As you can see, syntax-wise, it's not unlike Rust.
+
+# Quick start
+This section is a placeholder; it will be filled when Ile is published to [crates.io](crates.io) and when there are GitHub releases to download. For now, you have to clone the repo to use the interpreter.
+
+# Features
+Here are some things Ile does well:
+
+- Simple Rust API for easy integration into existing systems
+- Super-simple memory management without a heavy garbage collector or confusing borrow checker
+- Easy-to-learn syntax: if you've programmed before, Ile is a breeze
+- Lightweight: a simple infinite loop uses 61.1 megabytes of RAM in JavaScript (Node), but only 2.7 in Ile
+
+# Dependencies
+Ile has no dependencies! It doesn't require any other crates, and you don't need any special system packages. The only prerequisite is Cargo to build it. It'll probably work with any reasonably-recent `rustc` version.
+
+# How it works
+Ile is a traditional tree-walking interpreter. When you give it a source file, it first reads all characters in the file and tokenizes them. The tokenizer (lexer in other languages) is responsible for transforming the irregular and unpredictable human-readable (hopefully!) code into a bunch of tokens. A token is a piece of information that represents a bit of source code. It could be one character, like an equals sign, or it could be a bunch, like a variable name. Once the tokenizer has finished, the tokens are given to the parser, which converts them into an abstract syntax tree (AST). The parser reads tokens to guess which ones go together, and what kind of statement they form. Each group of tokens is parsed into a node, which is an in-memory representation of a piece of logic. It could be a variable declaration, function call, import, or anything else you can do.
+
+Once all the tokens have been parsed into a tree (one root node all other nodes are children of), execution can start. This is called "walking" the AST. Walking starts at the root node and does a depth-first search of all nodes and their children. For each node it encounters, it determines how to execute it based on its node type (`ntype`). If a node needs to walk children to get necessary values, like when a `let` statement is set to the result of a function call, its children are walked and their values are stored. If a node needs to make changes to the stack, it does it and finishes, returning a value if it should.
+
+The previously-mentioned stack is a `Vec` of stack entries which can be anything stored in memory--variables, modules, or imports--which is searched in reversed order to determine which variable is referenced when a name is written.
