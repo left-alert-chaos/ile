@@ -520,7 +520,7 @@ impl<'a> Parser {
     }
 
     /// Parse indexing an array with square brackets
-    fn parse_index(&mut self, path: &Vec<String>) -> Result<Node<'a>, Error> {
+    fn parse_index(&mut self, path: &[String]) -> Result<Node<'a>, Error> {
         let num1 = self.parse_individual_node()?;
 
         let mut num2 = None;
@@ -536,7 +536,7 @@ impl<'a> Parser {
         Ok(Node {
             token: self.current(),
             ntype: NodeType::Index {
-                path: path.clone(),
+                path: path.to_owned(),
                 index1: Box::new(num1),
                 index2: num2,
             },
@@ -620,14 +620,12 @@ impl<'a> Parser {
 
         // first check if it's a lone call or lookup
         if chain.len() == 1 {
-            let result = Ok(chain[0].clone());
-            result
+            Ok(chain[0].clone())
         } else {
-            let result = Ok(Node {
+            Ok(Node {
                 ntype: NodeType::Chain(chain),
                 token: self.current(),
-            });
-            result
+            })
         }
     }
 

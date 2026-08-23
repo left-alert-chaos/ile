@@ -60,11 +60,11 @@ impl<'a> ScopeStack<'a> {
     /// immediate children.
     pub fn set_path(
         &mut self,
-        path: &Vec<String>,
+        path: &[String],
         value: Object<'a>,
         token: &Token,
     ) -> Result<(), IleError> {
-        let mut path = path.clone();
+        let mut path = path.to_owned();
         if path.len() == 1 {
             self.set(path[0].clone(), value);
             return Ok(());
@@ -151,7 +151,7 @@ impl<'a> ScopeStack<'a> {
             None => {
                 return Err(IleError::new_runtime(
                     Some(token.clone()),
-                    format!("object '{}' doesn't exist", &path[0]),
+                    format!("object '{}' doesn't exist", path[0]),
                 ));
             }
             _ => {
@@ -248,10 +248,10 @@ impl<'a> ScopeStack<'a> {
                     unreachable!();
                 };
 
-                return stack.module_path_lookup(path, token);
+                stack.module_path_lookup(path, token)
             }
-            None => return Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist"))),
-            _ => return Ok(self.clone()),
+            None => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist"))),
+            _ => Ok(self.clone()),
         }
     }
 
@@ -362,10 +362,10 @@ impl<'a> ScopeStack<'a> {
         let last = self.current_stack.pop().unwrap();
         if let Variable::Return(value) = last.clone() {
             self.current_stack.push(last);
-            return Some(value);
+            Some(value)
         } else {
             self.current_stack.push(last);
-            return None;
+            None
         }
     }
 
@@ -399,13 +399,10 @@ impl<'a> ScopeStack<'a> {
                 && let Node {
                     ntype: NodeType::Root { name, .. },
                     ..
-                } = node
-            {
-                if name == searched_name {
+                } = node && name == searched_name {
                     *entry = Variable::Module(node.clone());
                     return true;
                 }
-            }
         }
 
         false

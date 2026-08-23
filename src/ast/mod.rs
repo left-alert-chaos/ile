@@ -71,7 +71,7 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, Error> {
 
     let tokens = tokenize(text, Some(path.clone()))?;
 
-    Ok(Parser::build_root(tokens, path)?)
+    Parser::build_root(tokens, path)
 }
 
 /// Tokenize the given source code and parse it into an AST.

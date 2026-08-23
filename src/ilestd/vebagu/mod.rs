@@ -27,7 +27,7 @@ pub fn build<'a>() -> module::Library<'a> {
 
 /// Spawn a python subprocess and return the rawfd number of the writer to the stdin
 fn new(s: FunctionSignature<'_>) -> FunctionResult<'_> {
-    if s.len() > 0 {
+    if !s.is_empty() {
         return Err(Error::new_rust("vebagu.new() takes no arguments"));
     }
 

@@ -65,7 +65,7 @@ impl<'a> Node<'a> {
 
         match block_to_try.walk_block(Vec::new(), stack, &Vec::new(), false) {
             Ok(value) => Ok(value),
-            Err(_) => return catch.walk_block(Vec::new(), stack, &Vec::new(), false),
+            Err(_) => catch.walk_block(Vec::new(), stack, &Vec::new(), false),
         }
     }
 
@@ -137,7 +137,7 @@ impl<'a> Node<'a> {
             new.push(object.clone());
         }
 
-        if index2 != usize::MAX && new.len() == 0 {
+        if index2 != usize::MAX && new.is_empty() {
             Err(Error::new_runtime(
                 self.token.clone(),
                 format!(
@@ -652,9 +652,9 @@ impl<'a> Node<'a> {
 
         // extract path names
         if name.contains('/') {
-            name = name.split('/').last().unwrap().to_string()
+            name = name.split('/').next_back().unwrap().to_string()
         } else if name.contains('\\') {
-            name = name.split('\\').last().unwrap().to_string()
+            name = name.split('\\').next_back().unwrap().to_string()
         }
 
         include::include(&mut stack);
@@ -741,10 +741,10 @@ impl<'a> Node<'a> {
         &self,
         mut args: Vec<Object<'a>>,
         stack: &mut scope::ScopeStack<'a>,
-        path: &Vec<String>,
+        path: &[String],
         is_function: bool,
     ) -> FunctionResult<'a> {
-        let path = path.clone();
+        let path = path.to_owned();
 
         let NodeType::CodeBlock { signature, .. } = self.ntype.clone() else {
             unreachable!();
@@ -764,7 +764,7 @@ impl<'a> Node<'a> {
                 // set automatic self value
                 if signature[0].as_str() == "self" && signature_len - args_len == 1 {
                     // check that this is, in fact, a method
-                    if path.len() > 0
+                    if !path.is_empty()
                         && let Ok(self_object) =
                             stack.path_lookup(&mut self_path.clone(), &self.token.clone().unwrap())
                     {
@@ -772,9 +772,7 @@ impl<'a> Node<'a> {
                         args.insert(0, self_object.clone());
                         String::new()
                     } else {
-                        format!(
-                            "missing one argument; the first argument is 'self', which is confusing because this isn't a method"
-                        )
+                        "missing one argument; the first argument is 'self', which is confusing because this isn't a method".to_string()
                     }
                 } else {
                     format!("missing {} arguments", signature_len - args_len)
@@ -803,7 +801,7 @@ impl<'a> Node<'a> {
                     ),
                 ));
             };
-            stack.set_path(&mut self_path, value, &self.token.clone().unwrap())?;
+            stack.set_path(&self_path, value, &self.token.clone().unwrap())?;
         }
 
         // keep the return statement
@@ -822,7 +820,7 @@ impl<'a> Node<'a> {
         &self,
         args: Vec<Object<'a>>,
         mut stack: scope::ScopeStack<'a>,
-        path: &Vec<String>,
+        path: &[String],
         is_function: bool,
     ) -> Result<ReturnEffect<'a>, Error> {
         let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
@@ -831,7 +829,7 @@ impl<'a> Node<'a> {
 
         // add a StackDivider
         stack.push(Variable::StackDivider(Some(ScopeType::Function(
-            path.clone(),
+            path.to_owned(),
         ))));
 
         // clone arguments onto stack

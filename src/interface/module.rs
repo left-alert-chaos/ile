@@ -52,21 +52,21 @@ impl<'a> Library<'a> {
     }
 }
 
-impl<'a> Into<Node<'a>> for Library<'a> {
-    fn into(self) -> Node<'a> {
+impl<'a> From<Library<'a>> for Node<'a> {
+    fn from(value: Library<'a>) -> Self {
         Node {
             token: None,
             ntype: NodeType::Root {
-                name: self.name,
-                stack: self.scope,
+                name: value.name,
+                stack: value.scope,
                 statements: Vec::new(),
-            },
+            }
         }
     }
 }
 
-impl<'a> Into<Variable<'a>> for Library<'a> {
-    fn into(self) -> Variable<'a> {
-        Variable::UnimportedModule(self.into())
+impl<'a> From<Library<'a>> for Variable<'a> {
+    fn from(value: Library<'a>) -> Variable<'a> {
+        Self::UnimportedModule(value.into())
     }
 }
