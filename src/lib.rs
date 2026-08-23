@@ -1,3 +1,8 @@
+//! # ile
+//! Ile is the Integrated Language for Extensions. It's an embedded scripting language with tight
+//! bindings to Rust, intended for use as a standalone language and for making extensions and
+//! plugins for a larger platform.
+
 pub mod ast;
 pub mod error;
 pub mod ilestd;

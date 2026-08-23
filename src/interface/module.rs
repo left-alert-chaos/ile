@@ -1,5 +1,6 @@
 //! # module
-//! `module` holds logic to easily create a library module.
+//! `module` holds logic to easily create a library module. This is where `Library` is defined.
+//! Please see `interface`'s docstring to learn more.
 
 use crate::*;
 

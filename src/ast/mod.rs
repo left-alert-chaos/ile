@@ -1,5 +1,36 @@
 //! # ast
 //! This module holds code to represent and build an Abstract Syntax Tree.
+//! This includes the `Node` struct that makes up every AST. Currently, all parsing logic lives in
+//! `build::parse`, all walking (execution) logic lives in `walk`, and all tokenization (lexing)
+//! logic lives in `build::token`.
+//!
+//! Example:
+//!
+//! ```rust
+//! use ile::ast::ast_from_file;
+//!
+//! // It's not generally good practice to unwrap, but it works for the example.
+//! // Replace the path with your own
+//! let mut ast = ast_from_file("examples/hello_world.il").unwrap();
+//! 
+//! // To execute, walk it as a module
+//! // Again, it isn't recommended to unwrap.
+//! // The argument tells Ile to include the standard library in the module before execution.
+//! ast.walk_as_mod(true).unwrap();
+//! ```
+//!
+//! This module also includes the `ast_from_str` function, which creates a syntax tree out of a
+//! string of source code. It goes hand-in-hand with `include_str!()` if you want to write some
+//! of your module in Ile.
+//!
+//! Example:
+//!
+//! ```rust
+//! use ile::ast::ast_from_str;
+//!
+//! let mut ast = ast_from_str(include_str!("../../examples/hello_world.il")).unwrap();
+//! ast.walk_as_mod(true).unwrap();
+//! ```
 
 pub mod arguments;
 pub mod build;

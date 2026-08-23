@@ -1,5 +1,29 @@
 //! # interface
-//! This module holds logic to wrap Rust functions to be usable within Ile.
+//! This module holds logic to wrap Rust functions to be usable within Ile. This includes a
+//! `Library` struct to easily build an interface to Ile code.
+//!
+//! Example:
+//!
+//! ```rust
+//! use ile::*;
+//!
+//! let mut my_library = module::Library::new("my_lib_name");
+//! my_library.add_function(&printer, signature!("string"), "printer");
+//!
+//! // convert the library to an AST node. This isn't always necessary.
+//! let node: Node<'_> = my_library.into();
+//! 
+//! // print inputs to screen
+//! fn printer(s: FunctionSignature<'_>) -> FunctionResult<'_> {
+//!     for argument in &s {
+//!         println!("{s:?}");
+//!     }
+//!
+//!     Ok(None)
+//! }
+//! ```
+//!
+//! For a better example of writing a library in Rust, take a glance at Ile's standard library.
 
 pub mod module;
 

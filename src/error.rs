@@ -2,6 +2,40 @@
 //! This module holds logic to display interpreter errors and allow you to create your own. Errors
 //! are generated when a piece of source code can't be tokenized, tokens can't be parsed into and
 //! AST, or an AST misuses a value or uses a value that doesn't exist.
+//!
+//! It's also what you use when a function you write doesn't run successfully. Here's an example for
+//! an adding library:
+//!
+//! ```rust
+//! use ile::*;
+//!
+//! // create the library
+//! let mut my_lib = module::Library::new("addlib");
+//! 
+//! // add the function to the library to be used by Ile
+//! my_lib.add_function(&adder, signature!("int", "int"), "adder");
+//!
+//! // This adder function will only add integers. If if encounters an argument other than an
+//! // integer, it will return an `Error`.
+//! fn adder(args: FunctionSignature<'_>) -> FunctionResult<'_> {
+//!     if args.len() != 2 {
+//!         return Err(Error::new_rust("addlib.adder() only takes 2 arguments"));
+//!     }
+//!     for arg in &args {
+//!         if !arg.is_integer() {
+//!             return Err(Error::new_rust("addlib.adder() only takes integers as arguments"));
+//!         }
+//!     }
+//!
+//!     Ok(
+//!         Some(
+//!             Object::Integer(
+//!                 args[0].integer().unwrap() + args[1].integer().unwrap()
+//!             )
+//!         )
+//!     )
+//! }
+//! ```
 
 use std::{error, fmt};
 
@@ -13,7 +47,7 @@ use crate::*;
 #[derive(Clone)]
 pub struct Error {
     pub message: String,
-    pub location: PipelineLocation,
+    location: PipelineLocation,
     pub token: Option<Token>,
 }
 
@@ -54,6 +88,15 @@ impl Error {
         Self {
             message: message.to_string(),
             location: PipelineLocation::Rust,
+            token: None,
+        }
+    }
+    
+    /// Create an `Error` with an arbitrary message that represents an error while tokenizing.
+    pub fn new_tokenization(message: impl ToString) -> Self {
+        Self {
+            message: message.to_string(),
+            location: PipelineLocation::Tokenization,
             token: None,
         }
     }

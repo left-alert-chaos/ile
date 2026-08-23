@@ -1,6 +1,9 @@
 //! # ilestd
 //! This module holds the source code of Ile's standard library. Some of it is in Rust, and some is
 //! in Ile.
+//!
+//! If you're including Ile inside your program, you shouldn't need to worry much about the STD, but
+//! it _is_ a great way to learn how to write Ile libraries.
 
 pub mod cast;
 pub mod in_out;

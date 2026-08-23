@@ -53,6 +53,9 @@ pub enum Object<'a> {
     Array(Vec<Self>),
 }
 
+unsafe impl Send for Object<'_> {}
+unsafe impl Sync for Object<'_> {}
+
 impl fmt::Display for Object<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -298,12 +301,12 @@ impl<'a> Variable<'a> {
 /// # ScopeType
 /// This represents any of the kinds of dividers there are. This is used to determine how far back
 /// to pop off the stack when a scope ends or a `return` statement is encountered.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Default)]
 pub enum ScopeType {
     /// Represents a function scope
     /// The `Vec` is the path to the called function.
     Function(Vec<String>),
 
     /// Represents a loop scope
-    Loop,
+    #[default] Loop,
 }
