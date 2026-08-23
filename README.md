@@ -20,7 +20,7 @@ Here are some things Ile does well:
 - Simple Rust API for easy integration into existing systems
 - Super-simple memory management without a heavy garbage collector or confusing borrow checker
 - Easy-to-learn syntax: if you've programmed before, Ile is a breeze
-- Lightweight: a simple infinite loop uses 61.1 megabytes of RAM in JavaScript (Node), but only 2.7 in Ile
+- Lightweight: a simple infinite loop uses 60.3 megabytes of RAM in JavaScript (Node), but only 2.8 in Ile
 
 # Dependencies
 Ile has no dependencies! It doesn't require any other crates, and you don't need any special system packages. The only prerequisite is Cargo to build it. It'll probably work with any reasonably-recent `rustc` version.

@@ -55,3 +55,11 @@ for let item = iterator.next(); {
 if array2[3] != 4 {
 	raise("Bad array iteration!");
 }
+
+# check that values don't impact each other
+let num1 = 1;
+let num2 = num1;
+num1 = num1 + 1;
+if num2 == num1 {
+	raise("num2 shouldn't update with num1");
+}
