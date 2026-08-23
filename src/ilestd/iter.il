@@ -1,4 +1,5 @@
 # This file holds the code for the Iterator datatype.
+
 let len = (arr) {
 	let index = 0;
 
@@ -16,17 +17,14 @@ let len = (arr) {
 };
 datatype Iterator {
 	let array = 0;
-	let index = 0;
+	let index = -1;
 
 	let next = (self) {
-		let index = self.index;
 		self.index = self.index + 1;
 
-		if index >= len(self.array) - 1 {
-			return;
+		if self.index < len(self.array) {
+			return self.array[self.index];
 		}
-
-		return self.array[self.index];
 	};
 }
 

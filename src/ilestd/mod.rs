@@ -67,4 +67,22 @@ mod tests {
         let res = ast.walk(&mut stack);
         assert_eq!(res.err().unwrap().message, String::from("HAHAHAHAHA"))
     }
+
+    #[test]
+    fn len() {
+        let code = r#"
+        import "std";
+        let arr = [1, 2, 3];
+        let x = std.iter.len(arr);
+        "#;
+        let mut ast = ast_from_str(code).unwrap();
+        ast.walk_as_mod(true).unwrap();
+        let NodeType::Root { mut stack, .. } = ast.ntype.clone() else {
+            unreachable!();
+        };
+        let Variable::Var { value: Object::Integer(num), .. } = stack.lookup(&String::from("x")).unwrap() else {
+            panic!("Couldn't get x");
+        };
+        assert_eq!(num.clone(), 3);
+    }
 }

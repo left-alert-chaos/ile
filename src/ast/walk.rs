@@ -745,7 +745,6 @@ impl<'a> Node<'a> {
         is_function: bool,
     ) -> FunctionResult<'a> {
         let path = path.clone();
-        println!("walk_block: Path is {path:?}");
 
         let NodeType::CodeBlock { signature, .. } = self.ntype.clone() else {
             unreachable!();
