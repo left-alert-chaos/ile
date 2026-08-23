@@ -65,7 +65,7 @@ impl<'a> Parser {
 
         // if the things before this didn't work, this can only be a word
         let TokenType::Word(word) = token.ttype.clone() else {
-            return Err(Error::new_parsing(Some(token.clone()), "expected word"));
+            return Err(Error::new_parsing(Some(token), "expected word"));
         };
 
         // determine node type from first token
@@ -124,11 +124,19 @@ impl<'a> Parser {
     }
 
     fn parse_return(&mut self) -> Result<Node<'a>, Error> {
+        if let Some(next) = self.peek_next() && next.ttype == TokenType::ChainEnd {
+            self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
+            return Ok(Node {
+                token: Some(next),
+                ntype: NodeType::Return(None),
+            });
+        }
+
         let value = self.parse_individual_node()?;
         self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
         Ok(Node {
             token: self.current(),
-            ntype: NodeType::Return(Box::new(value)),
+            ntype: NodeType::Return(Some(Box::new(value))),
         })
     }
 
@@ -482,7 +490,7 @@ impl<'a> Parser {
         // change child operator if it takes precedence (no way that's spelled right)
         if let NodeType::Operator(second_operator, second_operator_arm1, second_operator_arm2) =
             second_expression.clone().ntype
-            && second_operator.operator_priority() > token.clone().ttype.operator_priority()
+            && second_operator.operator_priority() < token.clone().ttype.operator_priority()
         {
             // move the previous operator into the first arm, as well as the first arm of the second
             // operator
@@ -539,6 +547,7 @@ impl<'a> Parser {
     fn parse_misc(&mut self, word: Option<String>) -> Result<Node<'a>, Error> {
         // non-keywords are always paths to something else, so read the path
         let mut path = Vec::new();
+
 
         if let Some(word) = word {
             path.push(word);
@@ -611,12 +620,14 @@ impl<'a> Parser {
 
         // first check if it's a lone call or lookup
         if chain.len() == 1 {
-            Ok(chain[0].clone())
+            let result = Ok(chain[0].clone());
+            result
         } else {
-            Ok(Node {
+            let result = Ok(Node {
                 ntype: NodeType::Chain(chain),
                 token: self.current(),
-            })
+            });
+            result
         }
     }
 

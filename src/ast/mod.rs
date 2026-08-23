@@ -56,7 +56,6 @@ mod tests {
 
     fn test_build(code: &str) -> Node<'_> {
         let ast = ast_from_str(code).unwrap();
-        println!("{ast:#?}");
         ast
     }
 

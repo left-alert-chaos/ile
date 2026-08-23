@@ -216,21 +216,63 @@ impl<'a> ScopeStack<'a> {
                     path.remove(0);
                     stack.datatype_path_lookup(path, token)
                 } else {
-                    return Err(IleError::new_runtime(
+                    Err(IleError::new_runtime(
                         Some(token.clone()),
                         "modules aren't usable as datatypes",
-                    ));
+                    ))
                 }
             }
             Some(_) => Err(IleError::new_runtime(
                 Some(token.clone()),
                 format!("path segment '{name}' is an object, not a datatype"),
             )),
-            None => Err(IleError::new_runtime(
+            None => { Err(IleError::new_runtime(
                 Some(token.clone()),
                 format!("path segment '{name}' doesn't exist"),
-            )),
+            ))},
         }
+    }
+
+    /// In reversed order, look through entries and recursively search for a module at the given
+    /// path. If there is one, return a mutable reference to its stack.
+    pub fn module_path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<ScopeStack<'a>, IleError> {
+        if path.is_empty() {
+            return Ok(self.clone());
+        }
+
+        let name = path.remove(0);
+
+        match self.lookup(&name) {
+            Some(Variable::Module(node)) => {
+                let NodeType::Root { stack, .. } = &mut node.ntype else {
+                    unreachable!();
+                };
+
+                return stack.module_path_lookup(path, token);
+            }
+            None => return Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist"))),
+            _ => return Ok(self.clone()),
+        }
+    }
+
+    /// Search for an existing module path and set its stack to the given value
+    pub fn module_path_set(&mut self, path: &mut Vec<String>, new_scope: Self) {
+        if path.is_empty() {
+            *self = new_scope;
+            return;
+        }
+
+        let name = path.remove(0);
+
+        let Some(Variable::Module(node)) = &mut self.lookup(&name) else {
+            *self = new_scope;
+            return;
+        };
+        let NodeType::Root { stack, .. } = &mut node.ntype else {
+            unreachable!();
+        };
+
+        stack.module_path_set(path, new_scope);
     }
 
     /// In reversed order, count through scopes and remove the specified number. These scopes,
