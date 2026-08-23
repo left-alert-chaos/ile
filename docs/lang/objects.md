@@ -69,3 +69,20 @@ instance.method1();
 ```
 
 In this example, we define a function inside a `datatype`, and give it a `self` argument. If the first argument of a function is called `self`, its value is automatically set to that of the object whose method is being called. After the function completes, the value of `self` is read again, and the original variable's value is set to `self`'s value. All this means in practice is that you can re-assign attributes inside of methods and the object will automatically update after the method completes.
+
+### Constructors
+As we have seen, `datatype`s act more as templates than normal types. This means that to create an instance with context-specific attributes, sometimes it's necessary to write a separate constructor. In Ile, constructors don't have special behaviors; they're just functions that return a customized instance of a `datatype`. Here's an example:
+
+```
+datatype MyType {
+    ...
+}
+
+let new_my_type = (attribute) {
+    let instance = MyType();
+    instance.attribute1 = attribute;
+    return instance;
+}
+```
+
+In this example, we write a small function that customizes a new Data object to fit the appropriate context.
