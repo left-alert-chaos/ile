@@ -126,6 +126,7 @@ impl<'a> ScopeStack<'a> {
                 "empty path for lookup",
             ));
         }
+                println!("Self is:\n{self:#?}");
 
         // get the top-level object that everything else is an attribute of
         let first = match self.lookup(&path[0]) {
@@ -149,6 +150,7 @@ impl<'a> ScopeStack<'a> {
             }
 
             None => {
+                println!("path_lookup: nonexistence because lookup() returned none");
                 return Err(IleError::new_runtime(
                     Some(token.clone()),
                     format!("object '{}' doesn't exist", &path[0]),
@@ -180,6 +182,7 @@ impl<'a> ScopeStack<'a> {
             match attributes.get_mut(segment.as_str()) {
                 Some(t) => target = t,
                 None => {
+                    println!("path_lookup: nonexistence because attributes.get_mut is none");
                     return Err(IleError::new_runtime(
                         Some(token.clone()),
                         format!("object '{target_name}' doesn't exist"),
@@ -216,21 +219,65 @@ impl<'a> ScopeStack<'a> {
                     path.remove(0);
                     stack.datatype_path_lookup(path, token)
                 } else {
-                    return Err(IleError::new_runtime(
+                    Err(IleError::new_runtime(
                         Some(token.clone()),
                         "modules aren't usable as datatypes",
-                    ));
+                    ))
                 }
             }
             Some(_) => Err(IleError::new_runtime(
                 Some(token.clone()),
                 format!("path segment '{name}' is an object, not a datatype"),
             )),
-            None => Err(IleError::new_runtime(
+            None => {println!("datatype_path_lookup: self.lookup() returned nothing"); Err(IleError::new_runtime(
                 Some(token.clone()),
                 format!("path segment '{name}' doesn't exist"),
-            )),
+            ))},
         }
+    }
+
+    /// In reversed order, look through entries and recursively search for a module at the given
+    /// path. If there is one, return a mutable reference to its stack.
+    pub fn module_path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<ScopeStack<'a>, IleError> {
+        if path.is_empty() {
+            return Ok(self.clone());
+        }
+
+        let name = path.remove(0);
+        println!("Name is {name}");
+
+        match self.lookup(&name) {
+            Some(Variable::Module(node)) => {
+                let NodeType::Root { stack, .. } = &mut node.ntype else {
+                    unreachable!();
+                };
+
+                return stack.module_path_lookup(path, token);
+            }
+            None => return Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist"))),
+            _ => return Ok(self.clone()),
+        }
+    }
+
+    /// Search for an existing module path and set its stack to the given value
+    pub fn module_path_set(&mut self, path: &mut Vec<String>, new_scope: Self) {
+        println!("module_path_set for path {path:?}");
+        if path.is_empty() {
+            *self = new_scope;
+            return;
+        }
+
+        let name = path.remove(0);
+
+        let Some(Variable::Module(node)) = &mut self.lookup(&name) else {
+            *self = new_scope;
+            return;
+        };
+        let NodeType::Root { stack, .. } = &mut node.ntype else {
+            unreachable!();
+        };
+
+        stack.module_path_set(path, new_scope);
     }
 
     /// In reversed order, count through scopes and remove the specified number. These scopes,

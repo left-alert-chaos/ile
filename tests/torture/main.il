@@ -1,6 +1,7 @@
 import "tests/torture/primes.il";
 import "tests/torture/info.il";
 import "std";
+let len = std.iter.len;
 
 # do some math
 if 5 + 2 * 3 != 11 {
@@ -47,7 +48,7 @@ if std.iter.len(array) != 4 {
 # iterate over an array
 let array2 = [];
 let iterator = std.iter.new_iterator(array);
-for let item = iterator.next() {
+for let item = iterator.next(); {
 	println(format("Found item ", item));
 	array2 = array2 + [item];
 }

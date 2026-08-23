@@ -745,7 +745,9 @@ impl<'a> Node<'a> {
         is_function: bool,
     ) -> FunctionResult<'a> {
         let path = path.clone();
-        let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
+        println!("walk_block: Path is {path:?}");
+
+        let NodeType::CodeBlock { signature, .. } = self.ntype.clone() else {
             unreachable!();
         };
 
@@ -786,6 +788,48 @@ impl<'a> Node<'a> {
             }
         }
 
+        let ReturnEffect { self_value, return_value, stopper, scope } = self.execute_child_statements(args, stack.module_path_lookup(&mut path.clone(), &self.token.clone().unwrap())?, &path, is_function)?;
+
+        // set the scope to the new value
+        stack.module_path_set(&mut path.clone(), scope);
+
+        // if it's a method, change the self path to reflect any changes
+        if set_self {
+            let Some(value) = self_value else {
+                return Err(Error::new_runtime(
+                    self.token.clone(),
+                    format!(
+                        "method '{}' somehow returned with self as a non-variable stack entry; this is confusing and frustrating and shouldn't even be possible",
+                        debug_path(&self_path)
+                    ),
+                ));
+            };
+            stack.set_path(&mut self_path, value, &self.token.clone().unwrap())?;
+        }
+
+        // keep the return statement
+        if !is_function && return_value.is_some() {
+            stack.push(Variable::Return(return_value.clone()));
+        }
+
+        if let Some(stop) = stopper {
+            stack.push(stop);
+        }
+
+        Ok(return_value)
+    }
+
+    fn execute_child_statements(
+        &self,
+        args: Vec<Object<'a>>,
+        mut stack: scope::ScopeStack<'a>,
+        path: &Vec<String>,
+        is_function: bool,
+    ) -> Result<ReturnEffect<'a>, Error> {
+        let NodeType::CodeBlock { chains, signature } = self.ntype.clone() else {
+            unreachable!();
+        };
+
         // add a StackDivider
         stack.push(Variable::StackDivider(Some(ScopeType::Function(
             path.clone(),
@@ -807,7 +851,7 @@ impl<'a> Node<'a> {
         let mut stopper = None;
 
         for mut statement in chains {
-            statement.walk(stack)?;
+            statement.walk(&mut stack)?;
 
             if let Some(value) = stack.is_return() {
                 return_value = Some(value);
@@ -820,37 +864,19 @@ impl<'a> Node<'a> {
             }
         }
 
-        // if it's a method, change the self path to reflect any changes
-        if set_self {
-            let self_value = stack.lookup(&String::from("self")).unwrap();
-            let Variable::Var { value, .. } = self_value.clone() else {
-                return Err(Error::new_runtime(
-                    self.token.clone(),
-                    format!(
-                        "method '{}' somehow returned with self as a non-variable stack entry; this is confusing and frustrating and shouldn't even be possible",
-                        debug_path(&self_path)
-                    ),
-                ));
-            };
-            stack.set_path(&mut self_path, value, &self.token.clone().unwrap())?;
-        }
+        let self_value = if let Some(Variable::Var { value, .. }) = stack.lookup(&String::from("self")) {
+            Some(value.clone())
+        } else {
+            None
+        };
 
-        // Remove variables from function's scope
-        stack.return_cleanup().unwrap();
+        stack.return_cleanup().expect("Somehow unable to clean up the stack after a function. Not sure how that happened, but it's probably a bad thing!");
 
-        // keep the return statement
-        if !is_function && return_value.is_some() {
-            stack.push(Variable::Return(return_value.clone().unwrap()));
-        }
+        //println!("Done with function. Stack is now\n{stack:#?}");
 
-        if let Some(stop) = stopper {
-            stack.push(stop);
-        }
-
-        Ok(match return_value {
-            None => None,
-            Some(value) => value,
-        })
+        Ok(
+            ReturnEffect { self_value, return_value: return_value.unwrap_or(None), stopper, scope: stack }
+        )
     }
 }
 
@@ -865,4 +891,11 @@ fn debug_path(path: &Vec<String>) -> String {
     res.pop();
 
     res
+}
+
+struct ReturnEffect<'a> {
+    self_value: Option<Object<'a>>,
+    return_value: Option<Object<'a>>,
+    stopper: Option<Variable<'a>>,
+    scope: ScopeStack<'a>,
 }

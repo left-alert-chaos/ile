@@ -206,7 +206,7 @@ impl<'a> Node<'a> {
             include::include(&mut stack);
         }
 
-        self.walk(&mut stack)?;
+        let result = self.walk(&mut stack);
 
         // reset self
         *self = Self {
@@ -218,6 +218,9 @@ impl<'a> Node<'a> {
             },
         };
 
-        Ok(())
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }
