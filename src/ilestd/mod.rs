@@ -10,6 +10,7 @@ pub mod in_out;
 pub mod include;
 pub mod time;
 pub mod vebagu;
+pub mod string;
 
 use crate::*;
 
@@ -28,18 +29,23 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
     ilestd.add_child(vebagu::build());
     ilestd.add_child(time::build());
     ilestd.add_child(cast::build());
+    ilestd.add_child(string::build());
 
-    // add ile-written module
-    let mut iter = ast_from_str(ITER_SOURCE).unwrap();
-    iter.walk_as_mod(false).unwrap();
-    let NodeType::Root { stack, .. } = iter.ntype else {
-        unreachable!()
-    };
-    let mut iter_library = module::Library::new("iter");
-    iter_library.scope = stack;
-    ilestd.add_child(iter_library);
+    // add ile-written modules
+    ilestd.add_child(build_ile_module(ITER_SOURCE, "iter"));
 
     ilestd
+}
+
+fn build_ile_module<'a>(source: &'a str, name: &'a str) -> module::Library<'a> {
+    let mut node = ast_from_str(source).unwrap();
+    node.walk_as_mod(false).unwrap();
+    let NodeType::Root { stack, .. } = node.ntype else {
+        unreachable!();
+    };
+    let mut library = module::Library::new(name);
+    library.scope = stack;
+    library
 }
 
 /// Return some info about the standard library.

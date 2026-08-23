@@ -63,3 +63,9 @@ num1 = num1 + 1;
 if num2 == num1 {
 	raise("num2 shouldn't update with num1");
 }
+
+# check that string splitting works
+let words = std.string.split("word1 word2");
+if words[1] != "word2" {
+	raise("words[1] isn't word2");
+}
