@@ -490,7 +490,7 @@ impl<'a> Parser {
         // change child operator if it takes precedence (no way that's spelled right)
         if let NodeType::Operator(second_operator, second_operator_arm1, second_operator_arm2) =
             second_expression.clone().ntype
-            && second_operator.operator_priority() > token.clone().ttype.operator_priority()
+            && second_operator.operator_priority() < token.clone().ttype.operator_priority()
         {
             // move the previous operator into the first arm, as well as the first arm of the second
             // operator

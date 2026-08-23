@@ -179,14 +179,14 @@ impl<'a> TokenType {
 
     pub fn operator_priority(&self) -> u8 {
         match self {
-            Self::Multiplication | Self::Division => 1,
-            Self::Addition | Self::Subtraction => 2,
+            Self::And | Self::Or => 1,
+            Self::Equality | Self::NotEqualTo => 2,
+            Self::Multiplication | Self::Division => 3,
+            Self::Addition | Self::Subtraction => 4,
             Self::GreaterThan
             | Self::LessThan
             | Self::GreaterThanOrEqualTo
-            | Self::LessThanOrEqualTo => 3,
-            Self::And | Self::Or => 4,
-            Self::Equality | Self::NotEqualTo => 5,
+            | Self::LessThanOrEqualTo => 5,
             _ => 0,
         }
     }
@@ -218,7 +218,7 @@ impl<'a> TokenType {
     // This took waaaay too long to write because of stupid lifetime errors.
     /// Check if two operator arms are the correct classifications to use this operator
     pub fn arms_are_correct(&self, arm1: &Object<'a>, arm2: &Object<'a>) -> bool {
-        if self.operator_priority() == 4 {
+        if self.operator_priority() == 1 {
             return arm1.boolean().is_some() && arm2.boolean().is_some();
         }
 
