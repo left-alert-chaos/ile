@@ -150,10 +150,14 @@ fn is_divisible(args: FunctionSignature<'_>) -> FunctionResult<'_> {
         return Err(Error::new_rust("is_divisible() takes two arguments"));
     }
     let Object::Integer(i1) = args[0] else {
-        return Err(Error::new_rust("is_divisible()'s first argument is an integer"));
+        return Err(Error::new_rust(
+            "is_divisible()'s first argument is an integer",
+        ));
     };
     let Object::Integer(i2) = args[1] else {
-        return Err(Error::new_rust("is_divisible()'s second argument is an integer"));
+        return Err(Error::new_rust(
+            "is_divisible()'s second argument is an integer",
+        ));
     };
 
     Ok(Some(Object::Boolean(i1 % i2 == 0)))

@@ -462,7 +462,11 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                     buffer.push('\\');
                 } else {
                     // start an escape sequence
-                    if !string { return Err(Error::new_tokenization("escape sequences aren't allowed outside of strings")); }
+                    if !string {
+                        return Err(Error::new_tokenization(
+                            "escape sequences aren't allowed outside of strings",
+                        ));
+                    }
                 }
             }
             'n' | 't' => {
@@ -470,7 +474,11 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                     buffer.push(match character {
                         'n' => '\n',
                         't' => '\t',
-                        _ => return Err(Error::new_tokenization(format!("unrecognized escape sequence: \\{character}"))),
+                        _ => {
+                            return Err(Error::new_tokenization(format!(
+                                "unrecognized escape sequence: \\{character}"
+                            )));
+                        }
                     });
                 } else {
                     buffer.push(character);

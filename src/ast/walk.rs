@@ -128,8 +128,7 @@ impl<'a> Node<'a> {
             index1
         };
 
-        let Some(Object::Array(existing)) = object.walk(stack)?
-        else {
+        let Some(Object::Array(existing)) = object.walk(stack)? else {
             return Err(Error::new_runtime(
                 self.token.clone(),
                 "indexed object isn't an array, so it can't be indexed",
@@ -151,9 +150,7 @@ impl<'a> Node<'a> {
         if index2 != usize::MAX && new.is_empty() {
             Err(Error::new_runtime(
                 self.token.clone(),
-                format!(
-                    "array doesn't have the index {index1}",
-                ),
+                format!("array doesn't have the index {index1}",),
             ))
         } else if new.len() == 1 {
             Ok(Some(new[0].clone()))
@@ -404,12 +401,27 @@ impl<'a> Node<'a> {
             },
             TokenType::Division => match arm1_value {
                 Object::Integer(i1) => {
-                    let i2 = { let i2 = arm2_value.integer().unwrap(); if i2 != 0 { i2} else { return Err(Error::new_runtime(self.token.clone(), "division by zero"))}};
-                    Ok(Some(Object::Float(
-                        (i1 / i2) as f64)))},
+                    let i2 = {
+                        let i2 = arm2_value.integer().unwrap();
+                        if i2 != 0 {
+                            i2
+                        } else {
+                            return Err(Error::new_runtime(self.token.clone(), "division by zero"));
+                        }
+                    };
+                    Ok(Some(Object::Float((i1 / i2) as f64)))
+                }
                 Object::Float(f1) => {
-                    let f2 = { let f2 = arm2_value.float().unwrap(); if f2 != 0.0 { f2 } else { return Err(Error::new_runtime(self.token.clone(), "division by zero"))}};
-                    Ok(Some(Object::Float(f1 / f2)))},
+                    let f2 = {
+                        let f2 = arm2_value.float().unwrap();
+                        if f2 != 0.0 {
+                            f2
+                        } else {
+                            return Err(Error::new_runtime(self.token.clone(), "division by zero"));
+                        }
+                    };
+                    Ok(Some(Object::Float(f1 / f2)))
+                }
                 _ => Err(Error::new_runtime(
                     self.token.clone(),
                     format!("can't divide {arm1_value:?} by {arm2_value:?}"),
