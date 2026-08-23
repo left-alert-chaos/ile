@@ -872,8 +872,6 @@ impl<'a> Node<'a> {
 
         stack.return_cleanup().expect("Somehow unable to clean up the stack after a function. Not sure how that happened, but it's probably a bad thing!");
 
-        //println!("Done with function. Stack is now\n{stack:#?}");
-
         Ok(
             ReturnEffect { self_value, return_value: return_value.unwrap_or(None), stopper, scope: stack }
         )
