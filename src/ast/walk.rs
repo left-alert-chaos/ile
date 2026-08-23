@@ -404,10 +404,13 @@ impl<'a> Node<'a> {
                 )),
             },
             TokenType::Division => match arm1_value {
-                Object::Integer(i1) => Ok(Some(Object::Float(
-                    (i1 / arm2_value.integer().unwrap()) as f64,
-                ))),
-                Object::Float(f1) => Ok(Some(Object::Float(f1 / arm2_value.float().unwrap()))),
+                Object::Integer(i1) => {
+                    let i2 = { let i2 = arm2_value.integer().unwrap(); if i2 != 0 { i2} else { return Err(Error::new_runtime(self.token.clone(), "division by zero"))}};
+                    Ok(Some(Object::Float(
+                        (i1 / i2) as f64)))},
+                Object::Float(f1) => {
+                    let f2 = { let f2 = arm2_value.float().unwrap(); if f2 != 0.0 { f2 } else { return Err(Error::new_runtime(self.token.clone(), "division by zero"))}};
+                    Ok(Some(Object::Float(f1 / f2)))},
                 _ => Err(Error::new_runtime(
                     self.token.clone(),
                     format!("can't divide {arm1_value:?} by {arm2_value:?}"),
