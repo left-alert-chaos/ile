@@ -6,7 +6,7 @@ let function = () {
     let x = 1;
     let y = x;
     y = y + 1; # x doesn't update with y
-} # after here, both x and y are dropped
+}; # after here, both x and y are dropped
 
 function();
 ```
