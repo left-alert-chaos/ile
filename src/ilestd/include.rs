@@ -40,6 +40,10 @@ pub fn include(scope: &mut ScopeStack<'_>) {
         name: String::from("not"),
         value: wrap_function(&not, signature!("bool")),
     });
+    scope.push(Variable::Var {
+        name: String::from("is_divisible"),
+        value: wrap_function(&is_divisible, signature!("int", "int")),
+    });
 
     // add the std
     scope.push(build_ile_std().into());
@@ -138,4 +142,19 @@ fn not(args: FunctionSignature<'_>) -> FunctionResult<'_> {
     };
 
     Ok(Some(Object::Boolean(!value)))
+}
+
+// takes two integers and determines if their quotient is a whole number
+fn is_divisible(args: FunctionSignature<'_>) -> FunctionResult<'_> {
+    if args.len() != 2 {
+        return Err(Error::new_rust("is_divisible() takes two arguments"));
+    }
+    let Object::Integer(i1) = args[0] else {
+        return Err(Error::new_rust("is_divisible()'s first argument is an integer"));
+    };
+    let Object::Integer(i2) = args[1] else {
+        return Err(Error::new_rust("is_divisible()'s second argument is an integer"));
+    };
+
+    Ok(Some(Object::Boolean(i1 % i2 == 0)))
 }

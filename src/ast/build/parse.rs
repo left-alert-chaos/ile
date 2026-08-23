@@ -426,7 +426,11 @@ impl<'a> Parser {
 
     fn parse_assignment(&mut self, path: Vec<String>) -> Result<Node<'a>, Error> {
         let value = self.parse_individual_node()?;
-        self.expect_single_char(TokenType::ChainEnd, "while parsing assignment")?;
+
+        // check for semicolon
+        if self.current().unwrap().ttype != TokenType::ChainEnd {
+            self.expect_single_char(TokenType::ChainEnd, "while parsing let statement")?;
+        }
 
         Ok(Node {
             ntype: NodeType::Assignment {

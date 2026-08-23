@@ -33,4 +33,4 @@ Once all the tokens have been parsed into a tree (one root node all other nodes 
 The previously-mentioned stack is a `Vec` of stack entries which can be anything stored in memory--variables, modules, or imports--which is searched in reversed order to determine which variable is referenced when a name is written.
 
 # Documentation
-All documentation for the language is available in the `docs/` directory. [Here's a link!](docs/README.md)
+All documentation for the language is available in the `docs/` directory. [Here's a link!](https://github.com/left-alert-chaos/ile/tree/main/docs/README.md)

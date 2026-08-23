@@ -92,7 +92,6 @@ impl<'a> Node<'a> {
         else {
             unreachable!();
         };
-        println!("Walking index where object is {object:#?}");
 
         // get first index
         let Some(Object::Integer(maybe_index1)) = index1.walk(stack)? else {
@@ -512,7 +511,6 @@ impl<'a> Node<'a> {
                 continue;
             };
             let Object::Data(mut attrs) = value else {
-                println!("chain is {self:#?}");
                 return Err(Error::new_runtime(
                     self.token.clone(),
                     format!("object {value:?} isn't data, so it can't be chained"),

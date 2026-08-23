@@ -1,5 +1,4 @@
 import "tests/torture/primes.il";
-import "tests/torture/info.il";
 import "std";
 let len = std.iter.len;
 
@@ -22,11 +21,6 @@ if format("number is ", 5) != "number is 5" {
 println(format("Negative one is ", -1));
 if -1 >= 0 {
 	raise("Negative one is greater than or equal to zero");
-}
-
-# check the value of an index
-if info.array[2] != 3 {
-	raise("Bad array indexing");
 }
 
 # cast an int to a float
@@ -73,4 +67,9 @@ if words[1] != "word2" {
 # check that arrays index without being assigned first
 if std.string.split("word1 word2")[1] != "word2" {
 	raise("words[1] isn't word2");
+}
+
+# check that the 50th prime can be calculated
+if primes.fifty_primes()[49] != 229 {
+	raise("primes[999] isn't 7919");
 }

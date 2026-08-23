@@ -15,6 +15,7 @@ let len = (arr) {
 
 	return index;
 };
+
 datatype Iterator {
 	let array = 0;
 	let index = -1;
@@ -22,7 +23,7 @@ datatype Iterator {
 	let next = (self) {
 		self.index = self.index + 1;
 
-		if self.index < len(self.array) {
+		if self.index < std.iter.len(self.array) {
 			return self.array[self.index];
 		}
 	};
@@ -33,5 +34,3 @@ let new_iterator = (arr) {
 	iter.array = arr;
 	return iter;
 };
-
-
