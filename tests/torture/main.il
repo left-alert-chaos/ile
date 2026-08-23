@@ -69,3 +69,8 @@ let words = std.string.split("word1 word2");
 if words[1] != "word2" {
 	raise("words[1] isn't word2");
 }
+
+# check that arrays index without being assigned first
+if std.string.split("word1 word2")[1] != "word2" {
+	raise("words[1] isn't word2");
+}

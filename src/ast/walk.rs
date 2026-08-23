@@ -85,13 +85,14 @@ impl<'a> Node<'a> {
 
     fn walk_index(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
         let NodeType::Index {
-            mut path,
+            mut object,
             mut index1,
             index2,
         } = self.ntype.clone()
         else {
             unreachable!();
         };
+        println!("Walking index where object is {object:#?}");
 
         // get first index
         let Some(Object::Integer(maybe_index1)) = index1.walk(stack)? else {
@@ -128,14 +129,11 @@ impl<'a> Node<'a> {
             index1
         };
 
-        let Object::Array(existing) = stack.path_lookup(&mut path, &self.token.clone().unwrap())?
+        let Some(Object::Array(existing)) = object.walk(stack)?
         else {
             return Err(Error::new_runtime(
                 self.token.clone(),
-                format!(
-                    "object '{}' isn't an array, so it can't be indexed",
-                    debug_path(&path)
-                ),
+                "indexed object isn't an array, so it can't be indexed",
             ));
         };
 
@@ -155,8 +153,7 @@ impl<'a> Node<'a> {
             Err(Error::new_runtime(
                 self.token.clone(),
                 format!(
-                    "array '{}' doesn't have the index {index1}",
-                    debug_path(&path)
+                    "array doesn't have the index {index1}",
                 ),
             ))
         } else if new.len() == 1 {
@@ -512,6 +509,7 @@ impl<'a> Node<'a> {
                 continue;
             };
             let Object::Data(mut attrs) = value else {
+                println!("chain is {self:#?}");
                 return Err(Error::new_runtime(
                     self.token.clone(),
                     format!("object {value:?} isn't data, so it can't be chained"),

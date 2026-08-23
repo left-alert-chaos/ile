@@ -525,7 +525,7 @@ impl<'a> Parser {
     }
 
     /// Parse indexing an array with square brackets
-    fn parse_index(&mut self, path: &[String]) -> Result<Node<'a>, Error> {
+    fn parse_index(&mut self, object: Node<'a>) -> Result<Node<'a>, Error> {
         let num1 = self.parse_individual_node()?;
 
         let mut num2 = None;
@@ -541,7 +541,7 @@ impl<'a> Parser {
         Ok(Node {
             token: self.current(),
             ntype: NodeType::Index {
-                path: path.to_owned(),
+                object: Box::new(object),
                 index1: Box::new(num1),
                 index2: num2,
             },
@@ -575,8 +575,24 @@ impl<'a> Parser {
                     path.clear();
                 }
                 TokenType::OpenBracket => {
-                    chain.push(self.parse_index(&path)?);
-                    path = Vec::new();
+                    // convert path to variable
+                    let var = Node {
+                        token: self.current(),
+                        ntype: NodeType::Variable(path.clone()),
+                    };
+
+                    if !path.is_empty() {
+                        chain.push(var);
+                    }
+
+                    let chain_node = Node {
+                        token: self.current(),
+                        ntype: NodeType::Chain(chain.clone()),
+                    };
+
+                    path.clear();
+                    chain.clear();
+                    chain.push(self.parse_index(chain_node)?);
                 }
                 TokenType::Assignment => return self.parse_assignment(path),
                 TokenType::CloseParen

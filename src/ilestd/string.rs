@@ -54,6 +54,7 @@ fn split(args: FunctionSignature<'_>) -> FunctionResult<'_> {
         let word: String = buffer.iter().collect();
 
         if word.ends_with(&pattern) {
+            for _ in pattern.chars() { buffer.pop(); };
             words.push(Object::String(word));
             buffer.clear();
         }

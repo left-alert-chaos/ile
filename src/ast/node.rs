@@ -108,7 +108,7 @@ pub enum NodeType<'a> {
 
     /// Represents indexing an array, which is read-only (square brackets)
     Index {
-        path: Path,
+        object: Box<Node<'a>>,
         index1: Box<Node<'a>>,
         index2: Option<Box<Node<'a>>>,
     },
