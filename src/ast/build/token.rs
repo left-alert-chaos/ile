@@ -440,6 +440,42 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 col = 1;
                 line += 1;
             }
+            /*
+            '\\' => {
+                if !string {
+                    return Err(Error::new_tokenization("escape sequences aren't allowed outside of strings"));
+                }
+                if let Some(char) = code.chars().nth(index + 1) {
+                    match char {
+                        'n' => buffer.push('\n'),
+                        't' => buffer.push('\t'),
+                        '\\' => buffer.push('\\'),
+                        _ => return Err(Error::new_tokenization(format!("unknown escape sequence '\\{char}'"))),
+                    }
+                } else {
+                    return Err(Error::new_tokenization("unexpected EOF before escape sequence finished"));
+                }
+            }
+            */
+            '\\' => {
+                if previous == '\\' {
+                    buffer.push('\\');
+                } else {
+                    // start an escape sequence
+                    if !string { return Err(Error::new_tokenization("escape sequences aren't allowed outside of strings")); }
+                }
+            }
+            'n' | 't' => {
+                if previous == '\\' {
+                    buffer.push(match character {
+                        'n' => '\n',
+                        't' => '\t',
+                        _ => return Err(Error::new_tokenization(format!("unrecognized escape sequence: \\{character}"))),
+                    });
+                } else {
+                    buffer.push(character);
+                }
+            }
             '#' => {
                 if !string {
                     comment = true;

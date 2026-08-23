@@ -246,4 +246,13 @@ mod tests {
         let mut ast = test_build(code);
         ast.walk_as_mod(true).unwrap();
     }
+
+    #[test]
+    fn newline_escape() {
+        let code = r#"
+        let x = "\n";
+        "#;
+        let ast = test_build(code);
+        assert_eq!(test_var("x", ast).string().unwrap(), &String::from("\n"));
+    }
 }
