@@ -284,5 +284,6 @@ pub enum ScopeType {
     Function(Vec<String>),
 
     /// Represents a loop scope
-    #[default] Loop,
+    #[default]
+    Loop,
 }

@@ -60,7 +60,7 @@ impl<'a> From<Library<'a>> for Node<'a> {
                 name: value.name,
                 stack: value.scope,
                 statements: Vec::new(),
-            }
+            },
         }
     }
 }

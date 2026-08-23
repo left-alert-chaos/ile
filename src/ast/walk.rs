@@ -24,7 +24,11 @@ impl<'a> Node<'a> {
             )))),
             NodeType::Call { .. } => self.walk_call(stack),
             NodeType::Return(value) => {
-                let value = if let Some(mut node) = value { node.walk(stack)? } else { None };
+                let value = if let Some(mut node) = value {
+                    node.walk(stack)?
+                } else {
+                    None
+                };
                 stack.push(Variable::Return(value));
                 Ok(None)
             }
@@ -53,14 +57,24 @@ impl<'a> Node<'a> {
     }
 
     fn walk_try(&self, stack: &mut scope::ScopeStack<'a>) -> FunctionResult<'a> {
-        let NodeType::Try { block_to_try, catch } = self.ntype.clone() else {
+        let NodeType::Try {
+            block_to_try,
+            catch,
+        } = self.ntype.clone()
+        else {
             unreachable!();
         };
 
         if !matches!(block_to_try.ntype, NodeType::CodeBlock { .. }) {
-            return Err(Error::new_runtime(self.token.clone(), "try blocks must be code blocks"));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                "try blocks must be code blocks",
+            ));
         } else if !matches!(catch.ntype, NodeType::CodeBlock { .. }) {
-            return Err(Error::new_runtime(self.token.clone(), "catch blocks must be code blocks"));
+            return Err(Error::new_runtime(
+                self.token.clone(),
+                "catch blocks must be code blocks",
+            ));
         }
 
         match block_to_try.walk_block(Vec::new(), stack, &Vec::new(), false) {
@@ -785,7 +799,17 @@ impl<'a> Node<'a> {
             }
         }
 
-        let ReturnEffect { self_value, return_value, stopper, scope } = self.execute_child_statements(args, stack.module_path_lookup(&mut path.clone(), &self.token.clone().unwrap())?, &path, is_function)?;
+        let ReturnEffect {
+            self_value,
+            return_value,
+            stopper,
+            scope,
+        } = self.execute_child_statements(
+            args,
+            stack.module_path_lookup(&mut path.clone(), &self.token.clone().unwrap())?,
+            &path,
+            is_function,
+        )?;
 
         // set the scope to the new value
         stack.module_path_set(&mut path.clone(), scope);
@@ -861,17 +885,21 @@ impl<'a> Node<'a> {
             }
         }
 
-        let self_value = if let Some(Variable::Var { value, .. }) = stack.lookup(&String::from("self")) {
-            Some(value.clone())
-        } else {
-            None
-        };
+        let self_value =
+            if let Some(Variable::Var { value, .. }) = stack.lookup(&String::from("self")) {
+                Some(value.clone())
+            } else {
+                None
+            };
 
         stack.return_cleanup().expect("Somehow unable to clean up the stack after a function. Not sure how that happened, but it's probably a bad thing!");
 
-        Ok(
-            ReturnEffect { self_value, return_value: return_value.unwrap_or(None), stopper, scope: stack }
-        )
+        Ok(ReturnEffect {
+            self_value,
+            return_value: return_value.unwrap_or(None),
+            stopper,
+            scope: stack,
+        })
     }
 }
 

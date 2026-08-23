@@ -12,7 +12,7 @@
 //! // It's not generally good practice to unwrap, but it works for the example.
 //! // Replace the path with your own
 //! let mut ast = ast_from_file("examples/hello_world.il").unwrap();
-//! 
+//!
 //! // To execute, walk it as a module
 //! // Again, it isn't recommended to unwrap.
 //! // The argument tells Ile to include the standard library in the module before execution.

@@ -12,7 +12,7 @@
 //!
 //! // convert the library to an AST node. This isn't always necessary.
 //! let node: Node<'_> = my_library.into();
-//! 
+//!
 //! // print inputs to screen
 //! fn printer(s: FunctionSignature<'_>) -> FunctionResult<'_> {
 //!     for argument in &s {

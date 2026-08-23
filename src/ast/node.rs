@@ -117,7 +117,7 @@ pub enum NodeType<'a> {
     Try {
         block_to_try: Box<Node<'a>>,
         catch: Box<Node<'a>>,
-    }
+    },
 }
 
 #[derive(Clone, Debug)]

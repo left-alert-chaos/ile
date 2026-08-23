@@ -11,7 +11,7 @@
 //!
 //! // create the library
 //! let mut my_lib = module::Library::new("addlib");
-//! 
+//!
 //! // add the function to the library to be used by Ile
 //! my_lib.add_function(&adder, signature!("int", "int"), "adder");
 //!
@@ -91,7 +91,7 @@ impl Error {
             token: None,
         }
     }
-    
+
     /// Create an `Error` with an arbitrary message that represents an error while tokenizing.
     pub fn new_tokenization(message: impl ToString) -> Self {
         Self {

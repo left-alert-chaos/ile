@@ -25,7 +25,12 @@ impl Token {
     pub fn from(value: String, line: u64, col: u32, file: Option<String>) -> Result<Self, Error> {
         let ttype = TokenType::from(value)?;
 
-        Ok(Self { ttype, line, col, file })
+        Ok(Self {
+            ttype,
+            line,
+            col,
+            file,
+        })
     }
 }
 
@@ -282,7 +287,9 @@ impl<'a> TokenType {
         if value.starts_with('"') && value.ends_with('"') {
             // check validity
             if len < 2 {
-                return Err(Error::new_tokenization("invalid string literal due to odd number of quotation marks"));
+                return Err(Error::new_tokenization(
+                    "invalid string literal due to odd number of quotation marks",
+                ));
             }
 
             // Remove quotes
@@ -349,7 +356,9 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
             '-' => {
                 // raise if you can't tell what it does
                 if index + 1 >= code.len() {
-                    return Err(Error::new_tokenization("EOF before meaning of minus sign can be determined"));
+                    return Err(Error::new_tokenization(
+                        "EOF before meaning of minus sign can be determined",
+                    ));
                 }
 
                 let next = code.chars().nth(index + 1).unwrap();

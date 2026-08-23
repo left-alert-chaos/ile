@@ -32,7 +32,9 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
     // add ile-written module
     let mut iter = ast_from_str(ITER_SOURCE).unwrap();
     iter.walk_as_mod(false).unwrap();
-    let NodeType::Root { stack, .. } = iter.ntype else { unreachable!() };
+    let NodeType::Root { stack, .. } = iter.ntype else {
+        unreachable!()
+    };
     let mut iter_library = module::Library::new("iter");
     iter_library.scope = stack;
     ilestd.add_child(iter_library);
@@ -83,7 +85,11 @@ mod tests {
         let NodeType::Root { mut stack, .. } = ast.ntype.clone() else {
             unreachable!();
         };
-        let Variable::Var { value: Object::Integer(num), .. } = stack.lookup(&String::from("x")).unwrap() else {
+        let Variable::Var {
+            value: Object::Integer(num),
+            ..
+        } = stack.lookup(&String::from("x")).unwrap()
+        else {
             panic!("Couldn't get x");
         };
         assert_eq!(num.clone(), 3);

@@ -85,7 +85,10 @@ impl<'a> Parser {
 
     fn parse_try(&mut self) -> Result<Node<'a>, Error> {
         let block_to_try = Box::new(self.parse_individual_node()?);
-        self.expect_single_char(TokenType::Word(String::from("catch")), "while parsing try-catch block")?;
+        self.expect_single_char(
+            TokenType::Word(String::from("catch")),
+            "while parsing try-catch block",
+        )?;
         let catch = Box::new(self.parse_individual_node()?);
 
         Ok(Node {
@@ -93,7 +96,7 @@ impl<'a> Parser {
             ntype: NodeType::Try {
                 block_to_try,
                 catch,
-            }
+            },
         })
     }
 
@@ -124,7 +127,9 @@ impl<'a> Parser {
     }
 
     fn parse_return(&mut self) -> Result<Node<'a>, Error> {
-        if let Some(next) = self.peek_next() && next.ttype == TokenType::ChainEnd {
+        if let Some(next) = self.peek_next()
+            && next.ttype == TokenType::ChainEnd
+        {
             self.expect_single_char(TokenType::ChainEnd, "while finishing return statement")?;
             return Ok(Node {
                 token: Some(next),
@@ -547,7 +552,6 @@ impl<'a> Parser {
     fn parse_misc(&mut self, word: Option<String>) -> Result<Node<'a>, Error> {
         // non-keywords are always paths to something else, so read the path
         let mut path = Vec::new();
-
 
         if let Some(word) = word {
             path.push(word);

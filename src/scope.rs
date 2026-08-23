@@ -226,16 +226,20 @@ impl<'a> ScopeStack<'a> {
                 Some(token.clone()),
                 format!("path segment '{name}' is an object, not a datatype"),
             )),
-            None => { Err(IleError::new_runtime(
+            None => Err(IleError::new_runtime(
                 Some(token.clone()),
                 format!("path segment '{name}' doesn't exist"),
-            ))},
+            )),
         }
     }
 
     /// In reversed order, look through entries and recursively search for a module at the given
     /// path. If there is one, return a mutable reference to its stack.
-    pub fn module_path_lookup(&mut self, path: &mut Vec<String>, token: &Token) -> Result<ScopeStack<'a>, IleError> {
+    pub fn module_path_lookup(
+        &mut self,
+        path: &mut Vec<String>,
+        token: &Token,
+    ) -> Result<ScopeStack<'a>, IleError> {
         if path.is_empty() {
             return Ok(self.clone());
         }
@@ -250,7 +254,10 @@ impl<'a> ScopeStack<'a> {
 
                 stack.module_path_lookup(path, token)
             }
-            None => Err(IleError::new_runtime(Some(token.clone()), format!("path segment '{name}' doesn't exist"))),
+            None => Err(IleError::new_runtime(
+                Some(token.clone()),
+                format!("path segment '{name}' doesn't exist"),
+            )),
             _ => Ok(self.clone()),
         }
     }
@@ -399,10 +406,12 @@ impl<'a> ScopeStack<'a> {
                 && let Node {
                     ntype: NodeType::Root { name, .. },
                     ..
-                } = node && name == searched_name {
-                    *entry = Variable::Module(node.clone());
-                    return true;
-                }
+                } = node
+                && name == searched_name
+            {
+                *entry = Variable::Module(node.clone());
+                return true;
+            }
         }
 
         false
