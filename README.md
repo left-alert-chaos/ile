@@ -14,6 +14,7 @@ As you can see, syntax-wise, it's not unlike Rust.
 # Quick start
 To get started with Ile, you can either download a released binary or install it with Cargo. If you're on x86 Windows or Linux, I'd suggest downloading a binary from the [releases](https://github.com/left-alert-chaos/ile/releases).
 
+## Installing with Cargo
 If you're on an ARM machine or Mac, you'll have to install it with Cargo. To determine if you [have Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html), run this command in your terminal:
 
 ```shell
