@@ -8,3 +8,4 @@ This documentation assumes that you can already program in another language. It'
 2. [Objects and classifications](objects.md)
 3. [Control flow](control.md)
 4. [Memory management](memory.md)
+5. [Modules](modules.md)
