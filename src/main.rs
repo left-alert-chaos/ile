@@ -28,10 +28,10 @@ fn repl() -> Result<(), Error> {
     let mut code = String::new();
     loop {
         let mut buffer = String::new();
-        if io::stdin().read_line(&mut buffer).is_err() {
+        if io::stdin().read_line(&mut buffer).is_err() || buffer.as_str() == "exit\n" {
             break;
         }
-        code.push('\n');
+        println!("Buffer is {buffer}");
         code.push_str(buffer.as_str());
     }
 
