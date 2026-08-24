@@ -1,6 +1,8 @@
 use ile::*;
 
-fn main() -> Result<(), error::Error> {
+use std::io;
+
+fn main() -> Result<(), Error> {
     let args: Vec<String> = std::env::args().collect();
 
     if args.contains(&String::from("-i")) {
@@ -13,11 +15,25 @@ fn main() -> Result<(), error::Error> {
     }
 
     if args.len() < 2 {
-        eprintln!("ile: no arguments were given");
+        repl()
     } else {
         let mut ast = ile::ast_from_file(args[1].clone())?;
-        return ast.walk_as_mod(true);
+        ast.walk_as_mod(true)
+    }
+}
+
+fn repl() -> Result<(), Error> {
+    println!("Welcome to the Ile REPL! Type the lines of your program, and then type 'exit' when you're done!");
+
+    let mut code = String::new();
+    loop {
+        let mut buffer = String::new();
+        if io::stdin().read_line(&mut buffer).is_err() {
+            break;
+        }
+        code.push('\n');
+        code.push_str(buffer.as_str());
     }
 
-    Ok(())
+    ast_from_str(code)?.walk_as_mod(true)
 }

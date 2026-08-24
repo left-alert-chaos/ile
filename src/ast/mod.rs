@@ -76,7 +76,7 @@ pub fn ast_from_file<'a>(path: impl ToString) -> Result<Node<'a>, Error> {
 
 /// Tokenize the given source code and parse it into an AST.
 /// Not recommended, because it doesn't record the file the code came from.
-pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, String> {
+pub fn ast_from_str<'a>(code: impl ToString) -> Result<Node<'a>, Error> {
     let tokens = tokenize(code, None)?;
     Ok(Parser::build_root(tokens, String::from("unknown"))?)
 }
