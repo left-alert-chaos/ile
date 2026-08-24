@@ -31,7 +31,6 @@ fn repl() -> Result<(), Error> {
         if io::stdin().read_line(&mut buffer).is_err() || buffer.as_str() == "exit\n" {
             break;
         }
-        println!("Buffer is {buffer}");
         code.push_str(buffer.as_str());
     }
 
