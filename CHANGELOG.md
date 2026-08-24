@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.4
+- Fix REPL again
+
 ## 0.1.3
 - Fix debug logging
 

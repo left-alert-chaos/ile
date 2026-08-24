@@ -28,9 +28,14 @@ fn repl() -> Result<(), Error> {
     let mut code = String::new();
     loop {
         let mut buffer = String::new();
-        if io::stdin().read_line(&mut buffer).is_err() || buffer.as_str() == "exit\n" {
+        if io::stdin().read_line(&mut buffer).is_err() {
             break;
         }
+        buffer = buffer.trim().to_string();
+        if buffer.as_str() == "exit" {
+            break;
+        }
+        code.push('\n');
         code.push_str(buffer.as_str());
     }
 
