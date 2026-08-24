@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.3
+- Fix debug logging
+
 ## 0.1.2
 - Fix REPL not exiting
 
