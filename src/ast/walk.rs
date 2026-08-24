@@ -250,8 +250,12 @@ impl<'a> Node<'a> {
         if condition_value {
             block.walk_block(Vec::new(), stack, &Vec::new(), false)?;
         } else {
-            if let Some(else_clause) = else_clause {
-                else_clause.walk_block(Vec::new(), stack, &Vec::new(), false)?;
+            if let Some(mut else_clause) = else_clause {
+                if matches!(else_clause.ntype, NodeType::CodeBlock { .. }) {
+                    else_clause.walk_block(Vec::new(), stack, &Vec::new(), false)?;
+                } else {
+                    else_clause.walk(stack)?;
+                }
             }
         }
 
