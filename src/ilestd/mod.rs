@@ -10,6 +10,8 @@ pub mod in_out;
 pub mod include;
 pub mod string;
 pub mod time;
+
+#[cfg(feature = "vebagu")]
 pub mod vebagu;
 
 use crate::*;
@@ -26,7 +28,10 @@ pub fn build_ile_std<'a>() -> module::Library<'a> {
 
     // add submodules
     ilestd.add_child(in_out::build());
+
+    #[cfg(feature = "vebagu")]
     ilestd.add_child(vebagu::build());
+
     ilestd.add_child(time::build());
     ilestd.add_child(cast::build());
     ilestd.add_child(string::build());
