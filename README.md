@@ -12,7 +12,28 @@ println("Hello, world!");
 As you can see, syntax-wise, it's not unlike Rust.
 
 # Quick start
-This section is a placeholder; it will be filled when Ile is published to [crates.io](crates.io) and when there are GitHub releases to download. For now, you have to clone the repo to use the interpreter.
+To get started with Ile, you can either download a released binary or install it with Cargo. If you're on x86 Windows or Linux, I'd suggest downloading a binary from the [releases](https://github.com/left-alert-chaos/ile/releases).
+
+If you're on an ARM machine or Mac, you'll have to install it with Cargo. To determine if you [have Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html), run this command in your terminal:
+
+```shell
+cargo --version
+```
+
+If something prints, you're good to go! Now install Ile with:
+
+```shell
+cargo install ile
+```
+
+Now you should be able to run it with the `ile` command. If you can't, it's probably because Cargo's `bin` directory isn't in your `PATH`. To temporarily add it on a Mac or on Linux, run this command:
+
+```shell
+export PATH="$PATH:~/.cargo/bin/"
+```
+
+# Usage
+To run the interpreter with a source file, set the file to the interprer's argument, like `ile my_file.il`. If no argument is supplied, it enters REPL mode, where you can type your program out manually.
 
 # Features
 Here are some things Ile does well:
