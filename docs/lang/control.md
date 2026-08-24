@@ -1,6 +1,19 @@
 # Control flow
 Like many other languages, Ile provides a few different methods for control flow. I'll run through all of them quickly here.
 
+## If-else
+This is the simplest form of control flow. An `if` block has 2 or 3 sections: the condition, the body, and, optionally, the `else` clause. When an `if` block is walked, the condition is evaluated. If it must be a boolean; if it isn't, and error is raised. If it is a boolean and it is `true`, the body is executed. If it is `false` and there is an `else` clause, the `else` clause is walked. The else clause can be a block or otherwise. You can use `else if` to chain `if` statements together.
+
+Here's an example:
+
+```
+if true {
+    println("It's true!");
+} else {
+    println("It's false.");
+}
+```
+
 ## Functions
 As already discussed, functions can be methods or normal, stand-alone blocks. Here's an example:
 
