@@ -12,6 +12,9 @@ fn main() -> Result<(), Error> {
             size_of::<ile::Node>()
         );
         return Ok(());
+    } else if args.contains(&String::from("-h")) || args.contains(&String::from("--help")) {
+        help();
+        return Ok(())
     }
 
     if args.len() < 2 {
@@ -22,8 +25,16 @@ fn main() -> Result<(), Error> {
     }
 }
 
+fn help() {
+    println!("Interpreted Language for Extensions
+
+Ile is a programming language for writing extensions. It is currently unstable.
+You set its argument to a file to run a source file, and leave no argument to enter the REPL.
+For information on the language, see https://github.com/left-alert-chaos/ile/blob/main/docs/lang/README.md.");
+}
+
 fn repl() -> Result<(), Error> {
-    println!("Welcome to the Ile REPL! Type the lines of your program, and then type 'exit' when you're done!");
+    println!("Welcome to the Ile REPL! Type the lines of your program, and then type 'exit' to load and run!");
 
     let mut code = String::new();
     loop {
