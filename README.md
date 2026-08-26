@@ -38,6 +38,8 @@ export PATH="$PATH:~/.cargo/bin/"
 # Usage
 To run the interpreter with a source file, set the file to the interprer's argument, like `ile my_file.il`. If no argument is supplied, it enters REPL mode, where you can type your program out manually.
 
+In REPL mode, you can load and run your program by typing "exit".
+
 # Features
 Here are some things Ile does well:
 
