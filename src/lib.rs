@@ -9,6 +9,7 @@ pub mod ilestd;
 pub mod interface;
 pub mod object;
 pub mod scope;
+pub mod seaweed;
 
 pub use ast::*;
 pub use error::*;
