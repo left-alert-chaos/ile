@@ -440,6 +440,7 @@ pub fn tokenize(code: impl ToString, file: Option<String>) -> Result<Vec<Token>,
                 col = 1;
                 line += 1;
             }
+            '\r' => {}
             /*
             '\\' => {
                 if !string {
