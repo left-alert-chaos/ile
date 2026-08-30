@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.7
+- Fix windows support
+
 ## 0.1.6
 - Add better help information
 
